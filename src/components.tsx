@@ -3,6 +3,10 @@ import * as Switch from "@radix-ui/react-switch";
 import { X, ArrowUpRight, Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { type Asset, type Symbol } from "./model";
+import usdgIcon from './images/icon/usdg.svg';
+import ethIcon from './images/icon/eth.svg';
+import nvdaIcon from './images/icon/nvda.png';
+const tokenIcons: Record<Symbol, string> = { USDG: usdgIcon, ETH: ethIcon, NVDA: nvdaIcon };
 export function Token({
   symbol,
   small = false,
@@ -11,9 +15,7 @@ export function Token({
   small?: boolean;
 }) {
   return (
-    <span className={`token token-${symbol} ${small ? "small" : ""}`}>
-      {symbol === "ETH" ? "♦" : symbol === "NVDA" ? "◉" : "$"}
-    </span>
+    <img className={`token ${small ? "small" : ""}`} src={tokenIcons[symbol]} alt="" width={33} height={33} />
   );
 }
 export function AssetName({ asset }: { asset: Asset }) {

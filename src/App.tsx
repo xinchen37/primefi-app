@@ -1,20 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useMatch,
+} from "react-router-dom";
 import { useAccount, useSwitchChain } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { robinhood } from "./wallet";
 import {
   ArrowUpRight,
-  ChevronDown,
   CircleHelp,
-  FlaskConical,
-  Globe2,
   Layers3,
-  RotateCcw,
   Wallet,
   X,
   CheckCircle2,
 } from "lucide-react";
 import Dashboard from "./Dashboard";
+import robinhoodIcon from './images/icon/robinhood.png';
 import Markets from "./Markets";
 import AssetDetail from "./AssetDetail";
 import Transaction from "./Transaction";
@@ -22,7 +28,6 @@ import { Modal } from "./components";
 import {
   assets,
   initial,
-  empty,
   totals,
   money,
   compact,
@@ -55,22 +60,31 @@ function load(): Portfolio {
   return structuredClone(initial);
 }
 export default function App() {
+  const { pathname } = useLocation();
+  const dashboardMatch = useMatch("/dashboard");
+  const marketsMatch = useMatch("/markets");
+  const page = dashboardMatch ? "dashboard" : marketsMatch ? "markets" : null;
   const { address, isConnected, isConnecting, isReconnecting, chainId } =
     useAccount();
   const { open } = useAppKit();
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
   const [portfolio, setPortfolio] = useState<Portfolio>(load),
-    [demoEnabled, setDemoEnabled] = useState(false),
-    [page, setPage] = useState<"dashboard" | "markets">("dashboard"),
     [help, setHelp] = useState(false),
     [detail, setDetail] = useState<Asset | null>(null),
     [transaction, setTransaction] = useState<{
       asset: Asset;
       action: Action;
     } | null>(null),
-    [toast, setToast] = useState(""),
-    [reset, setReset] = useState(false);
-  const connected = isConnected || demoEnabled;
+    [toast, setToast] = useState("");
+  useEffect(() => {
+    document.title = `${page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found"} · Orbit`;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    setDetail(null);
+    setTransaction(null);
+    setHelp(false);
+    setToast("");
+  }, [pathname, page]);
+  const connected = isConnected;
   async function showWallet() {
     try {
       await open({ view: isConnected ? "Account" : "Connect" });
@@ -135,40 +149,19 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="header">
-        <a
-          className="brand"
-          href="#"
-          onClick={() => setPage("dashboard")}
-          aria-label="Orbit home"
-        >
+        <Link className="brand" to="/dashboard" aria-label="Orbit home">
           <span className="brand-orbit" />
-          orbit<span className="brand-beta">BETA</span>
-        </a>
+          orbit
+        </Link>
         <nav aria-label="Main navigation">
-          <button
-            className={page === "dashboard" ? "active" : ""}
-            onClick={() => setPage("dashboard")}
-          >
+          <NavLink to="/dashboard" end>
             Dashboard
-          </button>
-          <button
-            className={page === "markets" ? "active" : ""}
-            onClick={() => setPage("markets")}
-          >
+          </NavLink>
+          <NavLink to="/markets" end>
             Markets
-          </button>
+          </NavLink>
         </nav>
         <div className="header-right">
-          <button
-            className="network"
-            aria-label="Switch to Robinhood Chain"
-            disabled={isSwitching}
-            onClick={switchNetwork}
-          >
-            <span className="chain-icon">↗</span>
-            <span>{isSwitching ? "Switching…" : "Robinhood"}</span>
-            <ChevronDown size={14} />
-          </button>
           <button
             className="wallet-button"
             onClick={showWallet}
@@ -184,17 +177,6 @@ export default function App() {
           </button>
         </div>
       </header>
-      <div className="demo-banner">
-        <FlaskConical size={14} />
-        <span>
-          Lending demo · All positions and balances below are simulated,
-          including after connecting a real wallet. No onchain transactions.
-        </span>
-        <button aria-label="Reset demo" onClick={() => setReset(true)}>
-          <RotateCcw size={13} />
-          <span>Reset demo</span>
-        </button>
-      </div>
       {isConnected && chainId !== robinhood.id && (
         <div className="network-warning" role="status">
           <span>Your wallet is on another network.</span>
@@ -208,98 +190,125 @@ export default function App() {
         </div>
       )}
       <main>
-        <section className="overview">
-          <div className="market-eyebrow">
-            <span className="chain-icon large">↗</span>
-            <span>
-              ROBINHOOD CHAIN <span className="version">V3</span>
-            </span>
-            <span className="live-dot" />{" "}
-            <span className="subtle">Demo market</span>
-          </div>
-          <div className="overview-heading">
-            <h1>
-              {page === "dashboard"
-                ? "Your assets. More possibilities."
-                : "Multi-asset lending market."}
-            </h1>
-            <button className="text-button" onClick={() => setHelp(true)}>
-              How lending works <ArrowUpRight size={16} />
-            </button>
-          </div>
-          <div className="overview-stats">
-            {page === "dashboard" ? (
-              <>
-                <div>
-                  <span>Net worth</span>
-                  <strong>{money(t.supplied - t.debt)}</strong>
-                </div>
-                <div>
-                  <span>
-                    Net APY{" "}
-                    <span title="Estimated annual net interest / net worth">
-                      ⓘ
+        {page && (
+          <section className="overview">
+            <div className="market-eyebrow">
+              <img className="chain-icon large" src={robinhoodIcon} alt="" width={30} height={30} />
+              <span>
+                ROBINHOOD CHAIN
+              </span>
+              <span className="live-dot" />{" "}
+              <span className="subtle">Lending market</span>
+            </div>
+            <div className="overview-heading">
+              <h1>
+                {page === "dashboard"
+                  ? "Your assets. More possibilities."
+                  : "Multi-asset lending market."}
+              </h1>
+              <button className="text-button" onClick={() => setHelp(true)}>
+                How lending works <ArrowUpRight size={16} />
+              </button>
+            </div>
+            <div className="overview-stats">
+              {page === "dashboard" ? (
+                <>
+                  <div>
+                    <span>Net worth</span>
+                    <strong>{money(t.supplied - t.debt)}</strong>
+                  </div>
+                  <div>
+                    <span>
+                      Net APY{" "}
+                      <span title="Estimated annual net interest / net worth">
+                        ⓘ
+                      </span>
                     </span>
-                  </span>
-                  <strong>
-                    {t.netApy.toFixed(2)}
-                    <em>%</em>
-                    <span className="stat-tag">Variable yield</span>
-                  </strong>
-                </div>
-                <div>
-                  <span>Available borrow power</span>
-                  <strong>{money(Math.max(0, t.limit - t.debt))}</strong>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <span>Total market size</span>
-                  <strong>${compact(market.supply)}</strong>
-                </div>
-                <div>
-                  <span>Total borrowed</span>
-                  <strong>${compact(market.debt)}</strong>
-                </div>
-                <div>
-                  <span>Available liquidity</span>
-                  <strong>${compact(market.supply - market.debt)}</strong>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="orbit-art" aria-hidden="true">
-            <div />
-            <div />
-            <div />
-            <span>✦</span>
-          </div>
-        </section>
+                    <strong>
+                      {t.netApy.toFixed(2)}
+                      <em>%</em>
+                      <span className="stat-tag">Variable yield</span>
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Available borrow power</span>
+                    <strong>{money(Math.max(0, t.limit - t.debt))}</strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span>Total market size</span>
+                    <strong>${compact(market.supply)}</strong>
+                  </div>
+                  <div>
+                    <span>Total borrowed</span>
+                    <strong>${compact(market.debt)}</strong>
+                  </div>
+                  <div>
+                    <span>Available liquidity</span>
+                    <strong>${compact(market.supply - market.debt)}</strong>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="orbit-art" aria-hidden="true">
+              <div />
+              <div />
+              <div />
+              <span>✦</span>
+            </div>
+          </section>
+        )}
         <div className="content">
-          {page === "dashboard" ? (
-            <Dashboard
-              portfolio={visible}
-              connected={connected}
-              onConnect={showWallet}
-              onAction={(asset, action) => setTransaction({ asset, action })}
-              onCollateral={collateral}
-              onDetail={setDetail}
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Dashboard
+                  portfolio={visible}
+                  connected={connected}
+                  onConnect={showWallet}
+                  onAction={(asset, action) =>
+                    setTransaction({ asset, action })
+                  }
+                  onCollateral={collateral}
+                  onDetail={setDetail}
+                />
+              }
             />
-          ) : (
-            <Markets portfolio={portfolio} onDetail={setDetail} />
+            <Route
+              path="/markets"
+              element={<Markets portfolio={portfolio} onDetail={setDetail} />}
+            />
+            <Route
+              path="*"
+              element={
+                <section className="empty not-found">
+                  <span className="tag">404</span>
+                  <h1>Page not found</h1>
+                  <p>This page does not exist or has moved.</p>
+                  <Link className="primary" to="/dashboard">
+                    Back to dashboard
+                  </Link>
+                </section>
+              }
+            />
+          </Routes>
+          {page && (
+            <div className="risk-footer">
+              <CircleHelp size={17} />
+              <p>
+                Understand the risks before borrowing. A health factor below 1
+                may trigger liquidation. Tokenized stocks also carry price-gap
+                risk during market closures.
+              </p>
+              <button onClick={() => setHelp(true)}>
+                Learn more <ArrowUpRight size={14} />
+              </button>
+            </div>
           )}
-          <div className="risk-footer">
-            <CircleHelp size={17} />
-            <p>
-              Understand the risks before borrowing. A health factor below 1 may
-              trigger liquidation. Tokenized stocks also carry price-gap risk
-              during market closures.
-            </p>
-            <button onClick={() => setHelp(true)}>
-              Learn more <ArrowUpRight size={14} />
-            </button>
-          </div>
         </div>
       </main>
       <footer>
@@ -309,9 +318,9 @@ export default function App() {
         </span>
         <div>
           <span className="inline">
-            <Globe2 size={13} /> Robinhood Chain
+            <img className="chain-icon footer-chain-icon" src={robinhoodIcon} alt="" width={16} height={16} /> Robinhood Chain
           </span>
-          <span>Phase 1 · Multi-asset lending</span>
+          <span>Multi-asset lending</span>
           <button onClick={() => setHelp(true)}>
             Risks & information <ArrowUpRight size={13} />
           </button>
@@ -336,7 +345,7 @@ export default function App() {
       {help && (
         <Modal
           title="About this lending market"
-          description="Phase 1 preview · Orbit is a provisional brand name"
+          description="Supply, borrow and manage your collateral."
           onClose={() => setHelp(false)}
         >
           <div className="help-copy">
@@ -352,50 +361,10 @@ export default function App() {
               thresholds ÷ debt value. Below 1, your position may be liquidated.
               Preview the impact before borrowing or withdrawing.
             </p>
-            <h3>This is a demo environment</h3>
-            <p>
-              Wallet connections use Reown AppKit and the official Robinhood
-              Chain network (4663). Lending positions, balances, rates and caps
-              remain local demo data, separate from the connected wallet. There
-              is no live interest accrual, oracle, keeper or actual liquidation.
-            </p>
-            <p>
-              Stocks can be supplied but not borrowed. Phase 1 excludes E-Mode
-              and leveraged LP positions. Emergency pause states and onchain
-              risk controls will be integrated later.
-            </p>
+            <h3>Asset-specific risk</h3>
+            <p>Each asset has its own collateral limits, supply cap and borrow cap. Available liquidity determines how much you can borrow or withdraw.</p>
+            <p>Tokenized stocks can be supplied and used as collateral, but cannot be borrowed. Market closures and price gaps may increase liquidation risk.</p>
           </div>
-        </Modal>
-      )}
-      {reset && (
-        <Modal
-          title="Reset demo positions"
-          description="Only affects demo data saved in this browser"
-          onClose={() => setReset(false)}
-        >
-          <button
-            className="primary full"
-            onClick={() => {
-              save(structuredClone(initial), "Sample positions restored");
-              setDemoEnabled(true);
-              setReset(false);
-            }}
-          >
-            Restore sample positions
-          </button>
-          <button
-            className="secondary full"
-            onClick={() => {
-              save(
-                structuredClone(empty),
-                "Positions cleared. Supply an asset to get started.",
-              );
-              setDemoEnabled(true);
-              setReset(false);
-            }}
-          >
-            Start fresh with demo wallet funds
-          </button>
         </Modal>
       )}
       {toast && (

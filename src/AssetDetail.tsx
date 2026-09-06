@@ -21,7 +21,7 @@ export default function AssetDetail({
   return (
     <Modal
       title={`${a.symbol} reserve details`}
-      description="Robinhood market · Demo parameters and prices"
+      description="Robinhood Chain · Reserve parameters"
       onClose={onClose}
     >
       <div className="detail-asset">
@@ -57,7 +57,7 @@ export default function AssetDetail({
       </Note>
       {a.symbol === "NVDA" && (
         <div className="warning">
-          Market closures, issuer freezes and price depegs may affect collateral safety. NVDA is the provisional launch asset.
+          Market closures, issuer freezes and price depegs may affect collateral safety.
         </div>
       )}
     </Modal>

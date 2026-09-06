@@ -15,6 +15,12 @@ pnpm build
 
 ## 已实现
 
+- URL 路由：`/` 自动跳转 `/dashboard`；`/dashboard` 为仓位控制台；`/markets` 为市场列表；未知地址显示英文 404 页面。支持直接访问、刷新、前进/后退和导航高亮。页面切换保留共享钱包与模拟仓位状态，关闭当前业务弹窗。
+
+### SPA 部署
+
+本地 Vite dev/preview 支持 history fallback。生产静态托管需将非静态文件请求回退到 `index.html`，避免直接访问 `/markets` 时服务器返回 404。例如 Nginx 在站点 `location /` 中使用 `try_files $uri $uri/ /index.html;`。资产详情和交易操作仍为弹窗，不新增独立 URL。
+
 - Dashboard：我的存款、我的借款、可存资产、可借资产。
 - Markets：资产搜索、存借规模、APY、利用率、存借硬顶与风险参数详情。
 - 存入、提现、借款、部分/全部还款；抵押开关；数量 MAX；交易状态与健康度预览。

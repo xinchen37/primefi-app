@@ -122,8 +122,7 @@ export default function Markets({
           <span>02 / TOKENIZED STOCKS</span>
           <h3>More possibilities for your holdings.</h3>
           <p>
-            NVDA
-            is the provisional demo stock, available for supply and collateral. Be mindful of market closures and oracle price gaps.
+            Supply NVDA and use it as collateral to access liquidity. Stock borrowing is not available. Consider market closures and oracle price gaps before borrowing against your holdings.
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { defineChain, http } from "viem";
+import robinhoodIcon from './images/icon/robinhood.png';
 
 // Public client identifier, not a secret. Override per deployment if needed.
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
@@ -35,6 +36,7 @@ export const walletModal = createAppKit({
   adapters: [walletAdapter],
   networks: [robinhood],
   defaultNetwork: robinhood,
+  chainImages: { [robinhood.id]: new URL(robinhoodIcon, window.location.origin).href },
   projectId,
   metadata: {
     name: "Orbit",

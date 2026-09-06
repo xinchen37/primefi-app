@@ -220,14 +220,14 @@ export default function Dashboard({
         <section className="panel">
           <div className="panel-title">
             <h3>Assets to supply</h3>
-            <span className="subtle">Demo funds</span>
+            <span className="subtle">Available balance</span>
           </div>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Asset</th>
-                  <th>Demo balance</th>
+                  <th>Balance</th>
                   <th>Supply APY</th>
                   <th />
                 </tr>

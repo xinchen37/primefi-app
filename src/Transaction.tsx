@@ -54,7 +54,7 @@ export default function Transaction({
   return (
     <Modal
       title={`${labels[action]} ${asset.symbol}`}
-      description="Simulated transaction · No signature or real asset transfer"
+      description="Review your amount and position changes."
       onClose={() => stage !== "pending" && onClose()}
     >
       {stage === "success" ? (
@@ -66,7 +66,7 @@ export default function Transaction({
           <p>
             {number(amount)} {asset.symbol}
           </p>
-          <p>Your demo position has been updated.</p>
+          <p>Your position has been updated.</p>
           <button className="primary full" onClick={onClose}>
             Back to dashboard
           </button>
@@ -141,13 +141,13 @@ export default function Transaction({
             <div className="detail-row">
               <span>Network fee</span>
               <strong>
-                $0.00 <small>Demo</small>
+                —
               </strong>
             </div>
           </div>
           <Note>
             {action === "repay"
-              ? "Demo debt includes interest as of the snapshot. Live repayment amounts will be fetched after contract integration."
+              ? "Repay part or all of your outstanding balance to reduce debt and improve your health factor."
               : asset.symbol === "NVDA"
                 ? "Tokenized stocks support supply and collateral only. Price gaps may occur while traditional markets are closed."
                 : "A health factor below 1 may trigger liquidation. Interest rates vary with market utilization."}
@@ -164,7 +164,7 @@ export default function Transaction({
           >
             {stage === "pending" ? (
               <>
-                <LoaderCircle className="spin" size={17} /> Simulating transaction…
+                <LoaderCircle className="spin" size={17} /> Processing…
               </>
             ) : (
               `Confirm ${labels[action].toLowerCase()}`
