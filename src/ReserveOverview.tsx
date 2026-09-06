@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUpRight, Check, Wallet } from 'lucide-react';
 import { assets, compact, money, number, reserve, maximum, totals, type Asset, type Action, type Portfolio } from './model';
 import { Token, Health, Note } from './components';
 import RateChart from './RateChart';
+import InfoTip from './InfoTip';
 import { robinhood } from './wallet';
 import robinhoodIcon from './images/icon/robinhood.png';
 
@@ -13,8 +14,8 @@ function CapSummary({ amount, cap, asset, borrow = false }: { amount: number; ca
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" className="ring-track" /><circle cx="50" cy="50" r="43" className="ring-fill" pathLength="100" strokeDasharray={`${Math.min(100, Math.max(0, percent))} 100`} /></svg>
       <strong>{percent.toFixed(2)}%</strong>
     </div>
-    <div><span>Total {borrow ? 'borrowed' : 'supplied'}</span><strong>{compact(amount)} <em>of</em> {compact(cap)} <small>{asset.symbol}</small></strong><small title={`${money(amount * asset.price)} of ${money(cap * asset.price)}`}>${compact(amount * asset.price)} of ${compact(cap * asset.price)}</small></div>
-    <div><span>{borrow ? 'APY, variable' : 'Supply APY'}</span><strong className={borrow ? '' : 'apy'}>{(borrow ? asset.borrowApy : asset.supplyApy).toFixed(2)}%</strong></div>
+    <div><span>Total {borrow ? 'borrowed' : 'supplied'} <InfoTip label={borrow ? 'Total borrowed' : 'Total supplied'} /></span><strong>{compact(amount)} <em>of</em> {compact(cap)} <small>{asset.symbol}</small></strong><small title={`${money(amount * asset.price)} of ${money(cap * asset.price)}`}>${compact(amount * asset.price)} of ${compact(cap * asset.price)}</small></div>
+    <div><span>{borrow ? 'APY, variable' : 'Supply APY'} {borrow && <InfoTip label="APY, variable" />}</span><strong className={borrow ? '' : 'apy'}>{(borrow ? asset.borrowApy : asset.supplyApy).toFixed(2)}%</strong></div>
     {borrow && <div><span>Borrow cap</span><strong>{compact(cap)} <small>{asset.symbol}</small></strong><small title={money(cap * asset.price)}>${compact(cap * asset.price)}</small></div>}
   </div>;
 }
@@ -53,14 +54,14 @@ export default function ReserveOverview(props: Props) {
     <div className="reserve-layout"><article className="reserve-config panel"><h2>Reserve status & configuration</h2>
       <section className="reserve-section"><h3>Supply Info</h3><div className="reserve-section-body"><CapSummary amount={r.total} cap={asset.supplyCap} asset={asset} /><RateChart key={`${asset.symbol}-supply`} label="Supply APY" rate={asset.supplyApy} />
         <div className="collateral-title"><h4>Collateral usage</h4><span><Check size={17} />Can be collateral</span></div>
-        <dl className="reserve-parameters">{[['Max LTV', `${(asset.ltv * 100).toFixed(2)}%`, 'Maximum borrowing power as a percentage of collateral value.'], ['Liquidation threshold', `${(asset.threshold * 100).toFixed(2)}%`, 'Collateral weighting used to calculate your health factor.'], ['Liquidation penalty', `${asset.penalty.toFixed(2)}%`, 'Additional collateral charged when a position is liquidated.']].map(([label, value, description]) => <div key={label}><dt title={description}>{label} ⓘ</dt><dd>{value}</dd></div>)}</dl>
+        <dl className="reserve-parameters">{([['Max LTV', `${(asset.ltv * 100).toFixed(2)}%`], ['Liquidation threshold', `${(asset.threshold * 100).toFixed(2)}%`], ['Liquidation penalty', `${asset.penalty.toFixed(2)}%`]] as const).map(([label, value]) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{value}</dd></div>)}</dl>
         {asset.symbol === 'NVDA' && <Note>Tokenized stock collateral is exposed to market closures and price gaps. Monitor your health factor when borrowing.</Note>}
       </div></section>
       <section className="reserve-section"><h3>Borrow info</h3><div className="reserve-section-body">{asset.borrowCap > 0 ? <><CapSummary amount={r.borrowed} cap={asset.borrowCap} asset={asset} borrow /><RateChart key={`${asset.symbol}-borrow`} label="Borrow APY, variable" rate={asset.borrowApy} borrow />
         <section className="collector-info" aria-label="Collector Info">
           <h4>Collector Info</h4>
           <dl className="reserve-parameters">
-            <div><dt title="Share of borrowing interest allocated to the protocol reserve.">Reserve factor ⓘ</dt><dd>{asset.reserveFactor.toFixed(2)}%</dd></div>
+            <div><dt>Reserve factor <InfoTip label="Reserve factor" /></dt><dd>{asset.reserveFactor.toFixed(2)}%</dd></div>
             <div><dt>Collector Contract</dt><dd><button className="collector-contract" disabled title="Contract address is not available yet." aria-label="View contract, address not available">View contract <ArrowUpRight size={16} /></button></dd></div>
           </dl>
         </section>

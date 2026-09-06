@@ -24,6 +24,7 @@ import {
 import Dashboard from "./Dashboard";
 import robinhoodIcon from './images/icon/robinhood.png';
 import Markets from "./Markets";
+import InfoTip from './InfoTip';
 import ReserveOverview from "./ReserveOverview";
 import AssetDetail from "./AssetDetail";
 import Transaction from "./Transaction";
@@ -223,9 +224,7 @@ export default function App() {
                   <div>
                     <span>
                       Net APY{" "}
-                      <span title="Estimated annual net interest / net worth">
-                        ⓘ
-                      </span>
+                      <InfoTip label="Net APY" />
                     </span>
                     <strong>
                       {t.netApy.toFixed(2)}

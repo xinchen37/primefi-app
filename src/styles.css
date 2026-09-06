@@ -1,4 +1,12 @@
 @import "tailwindcss";
+.overview-stats > div > span:has(> .info-tip-trigger), .reserve-cap-summary span:has(> .info-tip-trigger), .reserve-parameters dt:has(> .info-tip-trigger) { display:flex; align-items:center; gap:5px; }
+.info-tip-trigger { flex-shrink:0; line-height:1; }
+.info-tip-trigger { display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; width:15px; height:15px; margin:0; padding:0; border:0; background:transparent; color:#898393; cursor:pointer; }
+.info-tip-trigger:hover, .info-tip-trigger[data-state="delayed-open"], .info-tip-trigger[data-state="instant-open"] { color:#199eb1; }
+.info-tip-content { z-index:120; width:340px; max-width:calc(100vw - 32px); overflow:visible; padding:20px; background:#fff; color:#292735; border:1px solid #e6e3ed; border-radius:10px; box-shadow:0 6px 24px #29273514; }
+.info-tip-body { max-height:calc(var(--radix-tooltip-content-available-height) - 42px); overflow-y:auto; }
+.info-tip-content p { margin:0; font-size:14px; line-height:1.65; font-weight:400; }
+.info-tip-arrow { overflow:visible; transform:translateY(-1px); }
 .reserve-page { padding: 8px 0 48px; }
 .reserve-breadcrumb, .reserve-breadcrumb > span { display:flex; align-items:center; gap:12px; }
 .reserve-breadcrumb { gap:20px; margin-bottom:32px; }
