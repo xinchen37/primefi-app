@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Search, ArrowUpRight } from "lucide-react";
 import {
   assets,
   type Portfolio,
-  type Asset,
   compact,
   money,
   reserve,
@@ -11,10 +11,8 @@ import {
 import { AssetName } from "./components";
 export default function Markets({
   portfolio,
-  onDetail,
 }: {
   portfolio: Portfolio;
-  onDetail: (a: Asset) => void;
 }) {
   const [search, setSearch] = useState("");
   return (
@@ -60,7 +58,7 @@ export default function Markets({
                 return (
                   <tr key={a.symbol}>
                     <td>
-                      <AssetName asset={a} />
+                      <Link to={`/markets/${a.symbol.toLowerCase()}`}><AssetName asset={a} /></Link>
                     </td>
                     <td>
                       <strong>${compact(r.total * a.price)}</strong>
@@ -93,13 +91,13 @@ export default function Markets({
                       <small>{money(a.supplyCap * a.price)}</small>
                     </td>
                     <td>
-                      <button
+                      <Link
                         className="icon-button"
                         aria-label={`View ${a.symbol} details`}
-                        onClick={() => onDetail(a)}
+                        to={`/markets/${a.symbol.toLowerCase()}`}
                       >
                         <ArrowUpRight size={18} />
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 );

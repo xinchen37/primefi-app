@@ -13,6 +13,7 @@ export interface Asset {
   borrowed: number;
   supplyCap: number;
   borrowCap: number;
+  reserveFactor: number;
 }
 export interface Position {
   wallet: number;
@@ -35,6 +36,7 @@ export const assets: Asset[] = [
     borrowed: 3360000,
     supplyCap: 10000000,
     borrowCap: 6000000,
+    reserveFactor: 25,
   },
   {
     symbol: "ETH",
@@ -49,6 +51,7 @@ export const assets: Asset[] = [
     borrowed: 1080,
     supplyCap: 4000,
     borrowCap: 2500,
+    reserveFactor: 25,
   },
   {
     symbol: "NVDA",
@@ -63,6 +66,7 @@ export const assets: Asset[] = [
     borrowed: 0,
     supplyCap: 20000,
     borrowCap: 0,
+    reserveFactor: 0,
   },
 ];
 export const initial: Portfolio = {

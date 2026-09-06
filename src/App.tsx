@@ -24,6 +24,7 @@ import {
 import Dashboard from "./Dashboard";
 import robinhoodIcon from './images/icon/robinhood.png';
 import Markets from "./Markets";
+import ReserveOverview from "./ReserveOverview";
 import AssetDetail from "./AssetDetail";
 import Transaction from "./Transaction";
 import { Modal } from "./components";
@@ -65,6 +66,8 @@ export default function App() {
   const { pathname } = useLocation();
   const dashboardMatch = useMatch("/dashboard");
   const marketsMatch = useMatch("/markets");
+  const reserveMatch = useMatch("/markets/:symbol");
+  const reserveTitle = assets.find(a => a.symbol.toLowerCase() === reserveMatch?.params.symbol?.toLowerCase())?.name;
   const page = dashboardMatch ? "dashboard" : marketsMatch ? "markets" : null;
   const { address, isConnected, isConnecting, isReconnecting } =
     useAccount();
@@ -81,13 +84,13 @@ export default function App() {
     } | null>(null),
     [toast, setToast] = useState("");
   useEffect(() => {
-    document.title = `${page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found"} · Orbit`;
+    document.title = `${reserveTitle || (page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found")} · Orbit`;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     setDetail(null);
     setTransaction(null);
     setHelp(false);
     setToast("");
-  }, [pathname, page]);
+  }, [pathname, page, reserveTitle]);
   const connected = isConnected;
   async function showWallet() {
     try {
@@ -169,7 +172,7 @@ export default function App() {
           <NavLink to="/dashboard" end>
             Dashboard
           </NavLink>
-          <NavLink to="/markets" end>
+          <NavLink to="/markets">
             Markets
           </NavLink>
         </nav>
@@ -280,8 +283,9 @@ export default function App() {
             />
             <Route
               path="/markets"
-              element={<Markets portfolio={portfolio} onDetail={setDetail} />}
+              element={<Markets portfolio={portfolio} />}
             />
+            <Route path="/markets/:symbol" element={<ReserveOverview portfolio={portfolio} connected={connected} onConnect={showWallet} onAction={(asset, action) => setTransaction({ asset, action })} />} />
             <Route
               path="*"
               element={
