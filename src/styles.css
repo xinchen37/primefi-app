@@ -681,11 +681,19 @@
     gap: 9px;
   }
   .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    flex-shrink: 0;
+    min-width: 32px;
+    min-height: 32px;
     padding: 5px;
     color: #9b90a7;
     border-radius: 5px;
   }
-  .icon-button:hover {
+  .icon-button:hover,
+  .icon-button:focus-visible {
     background: #f2edf7;
   }
   .table-foot {
