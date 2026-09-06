@@ -19,6 +19,8 @@ export const walletModal = createAppKit({
   adapters: [walletAdapter],
   networks: [robinhood],
   defaultNetwork: robinhood,
+  // Browsing and wallet connection must not force a network change.
+  allowUnsupportedChain: true,
   chainImages: { [robinhood.id]: new URL(robinhoodIcon, window.location.origin).href },
   projectId,
   metadata: {

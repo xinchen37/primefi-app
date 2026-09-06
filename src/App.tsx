@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -8,7 +8,9 @@ import {
   useLocation,
   useMatch,
 } from "react-router-dom";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, useConfig, useSwitchChain } from "wagmi";
+import { getAccount } from 'wagmi/actions';
+import { ensureNetwork } from './ensureNetwork';
 import { useAppKit } from "@reown/appkit/react";
 import { robinhood } from "./wallet";
 import {
@@ -64,10 +66,12 @@ export default function App() {
   const dashboardMatch = useMatch("/dashboard");
   const marketsMatch = useMatch("/markets");
   const page = dashboardMatch ? "dashboard" : marketsMatch ? "markets" : null;
-  const { address, isConnected, isConnecting, isReconnecting, chainId } =
+  const { address, isConnected, isConnecting, isReconnecting } =
     useAccount();
   const { open } = useAppKit();
-  const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
+  const { switchChainAsync } = useSwitchChain();
+  const config = useConfig();
+  const collateralPending = useRef(false);
   const [portfolio, setPortfolio] = useState<Portfolio>(load),
     [help, setHelp] = useState(false),
     [detail, setDetail] = useState<Asset | null>(null),
@@ -94,17 +98,18 @@ export default function App() {
       );
     }
   }
-  async function switchNetwork() {
-    if (!isConnected) {
-      await showWallet();
-      return;
-    }
+  async function beforeTransaction() {
+    const connector = getAccount(config).connector;
+    if (!connector) throw new Error('Connect your wallet to continue.');
     try {
-      await switchChainAsync({ chainId: robinhood.id });
+      await ensureNetwork({
+        targetChainId: robinhood.id,
+        getSession: () => { const a = getAccount(config); return { address: a.address, connectorId: a.connector?.uid }; },
+        getChainId: () => connector.getChainId(),
+        switchChain: () => switchChainAsync({ chainId: robinhood.id, connector }),
+      });
     } catch {
-      setToast(
-        "Network switch was declined or failed. Please try again in your wallet.",
-      );
+      throw new Error('Unable to continue. Confirm the network switch in your wallet and keep the same account connected.');
     }
   }
   const visible = connected
@@ -135,7 +140,8 @@ export default function App() {
     }
     setToast(message);
   }
-  function collateral(a: Asset, value: boolean) {
+  async function collateral(a: Asset, value: boolean) {
+    if (collateralPending.current) return;
     const next = structuredClone(portfolio);
     next[a.symbol].collateral = value;
     if (totals(next).hf < 1.01) {
@@ -144,7 +150,13 @@ export default function App() {
       );
       return;
     }
-    save(next, `${a.symbol} collateral ${value ? "enabled" : "disabled"}`);
+    collateralPending.current = true;
+    try {
+      await beforeTransaction();
+      save(next, `${a.symbol} collateral ${value ? "enabled" : "disabled"}`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Unable to update collateral. Please try again.');
+    } finally { collateralPending.current = false; }
   }
   return (
     <div className="app-shell">
@@ -177,18 +189,6 @@ export default function App() {
           </button>
         </div>
       </header>
-      {isConnected && chainId !== robinhood.id && (
-        <div className="network-warning" role="status">
-          <span>Your wallet is on another network.</span>
-          <button
-            className="secondary"
-            disabled={isSwitching}
-            onClick={switchNetwork}
-          >
-            {isSwitching ? "Switching…" : `Switch to ${robinhood.name}`}
-          </button>
-        </div>
-      )}
       <main>
         {page && (
           <section className="overview">
@@ -333,6 +333,7 @@ export default function App() {
           portfolio={portfolio}
           onClose={() => setTransaction(null)}
           onComplete={save}
+          beforeSubmit={beforeTransaction}
         />
       )}
       {detail && (

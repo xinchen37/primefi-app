@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { Modal, Token, Toggle, Health, Note } from "./components";
 import {
@@ -24,32 +24,42 @@ export default function Transaction({
   portfolio,
   onClose,
   onComplete,
+  beforeSubmit,
 }: {
   asset: Asset;
   action: Action;
   portfolio: Portfolio;
   onClose: () => void;
   onComplete: (p: Portfolio, message: string) => void;
+  beforeSubmit: () => Promise<void>;
 }) {
   const [input, setInput] = useState(""),
+    [submitError, setSubmitError] = useState(''),
     [collateral, setCollateral] = useState(portfolio[asset.symbol].collateral),
     [stage, setStage] = useState<"edit" | "pending" | "success">("edit");
+  const submitting = useRef(false);
   const amount = Number(input),
     max = maximum(action, asset, portfolio),
     before = totals(portfolio),
     next = preview(portfolio, asset, action, amount || 0, collateral),
     after = totals(next),
     error = validate(portfolio, asset, action, amount, collateral);
-  function submit() {
-    if (error || stage !== "edit") return;
+  async function submit() {
+    if (error || stage !== "edit" || submitting.current) return;
+    submitting.current = true;
+    setSubmitError('');
     setStage("pending");
-    setTimeout(() => {
+    try {
+      await beforeSubmit();
       onComplete(
         next,
         `${labels[action]} successful: ${number(amount)} ${asset.symbol}`,
       );
       setStage("success");
-    }, 750);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Unable to complete the operation. Please try again.');
+      setStage('edit');
+    } finally { submitting.current = false; }
   }
   return (
     <Modal
@@ -157,6 +167,7 @@ export default function Transaction({
               {error}
             </p>
           )}
+          {submitError && <p role="alert" className="error">{submitError}</p>}
           <button
             className="primary full"
             disabled={!!error || stage === "pending"}
