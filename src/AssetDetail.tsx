@@ -1,4 +1,5 @@
 import { Modal, AssetName, Note } from "./components";
+import { robinhood } from './network';
 import {
   type Asset,
   type Portfolio,
@@ -21,7 +22,7 @@ export default function AssetDetail({
   return (
     <Modal
       title={`${a.symbol} reserve details`}
-      description="Robinhood Chain · Reserve parameters"
+      description={`${robinhood.name} · Reserve parameters`}
       onClose={onClose}
     >
       <div className="detail-asset">

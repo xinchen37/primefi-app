@@ -11,6 +11,19 @@ pnpm test
 pnpm build
 ```
 
+### Build environments
+
+| Command | Network | Output |
+| --- | --- | --- |
+| `pnpm dev` | Robinhood Chain Testnet (46630) | Local development server |
+| `pnpm build:dev` | Robinhood Chain Testnet (46630) | `dist` |
+| `pnpm build:prod` | Robinhood Chain (4663) | `dist` |
+| `pnpm build` | Alias for `build:prod` | `dist` |
+| `pnpm preview:dev` | Serve the latest build | `dist` |
+| `pnpm preview:prod` / `pnpm preview` | Serve the latest build | `dist` |
+
+The build selects its network using Vite `MODE`, not `PROD` (both build modes are optimized production bundles). `.env` holds the shared Reown project ID. `.env.dev` and `.env.prod` hold network-specific RPC URLs. Override these in `.env.dev.local` and `.env.prod.local` as needed, then restart or rebuild. Both environments output to `dist`; each build replaces the previous output. Preview serves the latest existing bundle and cannot change its embedded network. Deploy `dist` with an SPA fallback to its `index.html`.
+
 默认未连接钱包。点击 Connect wallet 连接真实钱包；连接后地址按钮打开 AppKit 账户面板，可复制地址和断开连接。切换账户及重新连接由 Wagmi/AppKit 管理。网络不匹配时显示 Switch to Robinhood，失败或拒绝会提示。无需真实钱包也可通过 Reset demo 恢复示例仓位或从零开始；该操作只启用独立借贷演示，不伪造钱包连接状态。借贷仓位保存在 localStorage，始终是浏览器共享的模拟数据，不代表任何真实地址的持仓。
 
 ## 已实现
@@ -36,7 +49,7 @@ pnpm build
 
 `src/wallet.ts` 在 React 渲染外初始化 Reown AppKit + WagmiAdapter，根层挂载 WagmiProvider 和 QueryClientProvider。项目 ID 位于 `.env` 的 `VITE_REOWN_PROJECT_ID`，它是公开客户端标识，不是私钥。支持 WalletConnect QR 和浏览器钱包。电子邮箱、社交登录、兑换、入金与分析功能关闭。
 
-网络采用官方 Robinhood Chain 主网配置：chain ID 4663、RPC `https://rpc.mainnet.chain.robinhood.com`、浏览器 `https://robinhoodchain.blockscout.com`。已通过 `eth_chainId` 验证返回 `0x1237`（4663）。公共 RPC 有限流，生产环境可在 `.env.local` 覆盖 `VITE_ROBINHOOD_RPC_URL`。部署前在 Reown Dashboard 配置正式站点 allowed origins。参考 https://docs.robinhood.com/chain/connecting/ 。
+网络采用官方配置，集中在 `src/network.ts`：dev 使用测试链 46630、`https://rpc.testnet.chain.robinhood.com` 和 `https://explorer.testnet.chain.robinhood.com`；prod 使用主链 4663、`https://rpc.mainnet.chain.robinhood.com` 和 `https://robinhoodchain.blockscout.com`。公共 RPC 有限流，生产环境可在 `.env.prod.local` 覆盖 `VITE_ROBINHOOD_RPC_URL`。部署前在 Reown Dashboard 配置正式站点 allowed origins。参考 https://docs.robinhood.com/chain/connecting/ 。
 
 `pnpm-workspace.yaml` 将 AppKit 间接依赖的 `@wagmi/core` 和 `@wagmi/connectors` 固定在兼容 Wagmi 2 的版本，避免宽泛 peer 范围自动解析到 Wagmi 3。
 

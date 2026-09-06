@@ -185,7 +185,7 @@ export default function App() {
             disabled={isSwitching}
             onClick={switchNetwork}
           >
-            {isSwitching ? "Switching…" : "Switch to Robinhood"}
+            {isSwitching ? "Switching…" : `Switch to ${robinhood.name}`}
           </button>
         </div>
       )}
@@ -195,7 +195,7 @@ export default function App() {
             <div className="market-eyebrow">
               <img className="chain-icon large" src={robinhoodIcon} alt="" width={30} height={30} />
               <span>
-                ROBINHOOD CHAIN
+                {robinhood.name.toUpperCase()}
               </span>
               <span className="live-dot" />{" "}
               <span className="subtle">Lending market</span>
@@ -318,7 +318,7 @@ export default function App() {
         </span>
         <div>
           <span className="inline">
-            <img className="chain-icon footer-chain-icon" src={robinhoodIcon} alt="" width={16} height={16} /> Robinhood Chain
+            <img className="chain-icon footer-chain-icon" src={robinhoodIcon} alt="" width={16} height={16} /> {robinhood.name}
           </span>
           <span>Multi-asset lending</span>
           <button onClick={() => setHelp(true)}>

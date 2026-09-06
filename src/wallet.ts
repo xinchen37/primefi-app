@@ -1,31 +1,14 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { defineChain, http } from "viem";
+import { http } from "viem";
+import { robinhood } from './network';
+export { robinhood } from './network';
 import robinhoodIcon from './images/icon/robinhood.png';
 
 // Public client identifier, not a secret. Override per deployment if needed.
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
 if (!projectId)
   throw new Error("Set VITE_REOWN_PROJECT_ID to enable wallet connections.");
-export const robinhood = defineChain({
-  id: 4663,
-  name: "Robinhood Chain",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: [
-        import.meta.env.VITE_ROBINHOOD_RPC_URL ||
-          "https://rpc.mainnet.chain.robinhood.com",
-      ],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Blockscout",
-      url: "https://robinhoodchain.blockscout.com",
-    },
-  },
-});
 export const walletAdapter = new WagmiAdapter({
   projectId,
   networks: [robinhood],
@@ -40,7 +23,7 @@ export const walletModal = createAppKit({
   projectId,
   metadata: {
     name: "Orbit",
-    description: "Multi-asset lending on Robinhood Chain",
+    description: `Multi-asset lending on ${robinhood.name}`,
     url: window.location.origin,
     icons: [`${window.location.origin}/orbit.svg`],
   },
