@@ -158,8 +158,8 @@ export default function Transaction({
           <Note>
             {action === "repay"
               ? "Repay part or all of your outstanding balance to reduce debt and improve your health factor."
-              : asset.symbol === "NVDA"
-                ? "Tokenized stocks support supply and collateral only. Price gaps may occur while traditional markets are closed."
+              : asset.symbol === "NVDA" || asset.symbol === "SPY"
+                ? "Tokenized securities can be supplied and borrowed. Price gaps and issuer restrictions may affect your position."
                 : "A health factor below 1 may trigger liquidation. Interest rates vary with market utilization."}
           </Note>
           {input && error && (

@@ -26,6 +26,11 @@ import robinhoodIcon from './images/icon/robinhood.png';
 import Markets from "./Markets";
 import InfoTip from './InfoTip';
 import ReserveOverview from "./ReserveOverview";
+import IsolatedOverview from './IsolatedOverview';
+import IsolatedDashboard from './IsolatedDashboard';
+import IsolatedTransaction from './IsolatedTransaction';
+import { PositionTabs } from './MarketNavigation';
+import { isolatedMarkets, isolatedTotals, loadIsolated, isolatedStorageKey, type IsolatedMarket } from './isolated';
 import AssetDetail from "./AssetDetail";
 import Transaction from "./Transaction";
 import { Modal } from "./components";
@@ -43,6 +48,7 @@ import {
 function load(): Portfolio {
   try {
     const raw = JSON.parse(localStorage.getItem("orbit-demo-v1") || "null");
+    if (raw && typeof raw === 'object' && !raw.SPY) raw.SPY = structuredClone(initial.SPY);
     if (
       raw &&
       assets.every((a) => {
@@ -64,10 +70,14 @@ function load(): Portfolio {
   return structuredClone(initial);
 }
 export default function App() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const isolatedCategory = new URLSearchParams(search).get('category') === 'isolated';
   const dashboardMatch = useMatch("/dashboard");
   const marketsMatch = useMatch("/markets");
   const reserveMatch = useMatch("/markets/:symbol");
+  const isolatedMatch = useMatch('/markets/isolated/:symbol');
+  const isolatedDashboardMatch = useMatch('/dashboard/isolated/:symbol');
+  const isolatedTitle = isolatedMarkets.find(m => m.symbol.toLowerCase() === (isolatedMatch?.params.symbol || isolatedDashboardMatch?.params.symbol)?.toLowerCase())?.symbol;
   const reserveTitle = assets.find(a => a.symbol.toLowerCase() === reserveMatch?.params.symbol?.toLowerCase())?.name;
   const page = dashboardMatch ? "dashboard" : marketsMatch ? "markets" : null;
   const { address, isConnected, isConnecting, isReconnecting } =
@@ -76,6 +86,8 @@ export default function App() {
   const { switchChainAsync } = useSwitchChain();
   const config = useConfig();
   const collateralPending = useRef(false);
+  const [isolatedPortfolio, setIsolatedPortfolio] = useState(loadIsolated);
+  const [isolatedTransaction, setIsolatedTransaction] = useState<{ market: IsolatedMarket; action: Action } | null>(null);
   const [portfolio, setPortfolio] = useState<Portfolio>(load),
     [help, setHelp] = useState(false),
     [detail, setDetail] = useState<Asset | null>(null),
@@ -85,14 +97,19 @@ export default function App() {
     } | null>(null),
     [toast, setToast] = useState("");
   useEffect(() => {
-    document.title = `${reserveTitle || (page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found")} · Orbit`;
+    document.title = `${isolatedTitle ? `${isolatedTitle} / USDG` : reserveTitle || (page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found")} · Orbit`;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     setDetail(null);
     setTransaction(null);
+    setIsolatedTransaction(null);
     setHelp(false);
     setToast("");
-  }, [pathname, page, reserveTitle]);
+  }, [pathname, search, page, reserveTitle, isolatedTitle]);
   const connected = isConnected;
+  const isolatedSummary = isolatedMarkets.reduce((sum, m) => {
+    const p = isolatedPortfolio[m.symbol];
+    return { collateral: sum.collateral + (connected ? p.supplied * m.price : 0), debt: sum.debt + (connected ? p.debt : 0) };
+  }, { collateral: 0, debt: 0 });
   async function showWallet() {
     try {
       await open({ view: isConnected ? "Account" : "Connect" });
@@ -125,7 +142,7 @@ export default function App() {
           ]),
         ) as Portfolio),
     t = totals(visible);
-  const market = assets.reduce(
+  const market = isolatedCategory ? isolatedMarkets.reduce((sum, m) => { const t = isolatedTotals(m, isolatedPortfolio[m.symbol]); return { supply: sum.supply + t.totalCollateral * m.price, debt: sum.debt + t.totalDebt }; }, { supply: 0, debt: 0 }) : assets.reduce(
     (v, a) => {
       const r = reserve(a, portfolio);
       return {
@@ -143,6 +160,13 @@ export default function App() {
       /* In-memory demo remains usable. */
     }
     setToast(message);
+  }
+  function completeIsolated(next: import('./isolated').IsolatedPosition, usdgDelta: number) {
+    if (!isolatedTransaction) return;
+    const updated = { ...isolatedPortfolio, [isolatedTransaction.market.symbol]: next };
+    setIsolatedPortfolio(updated);
+    try { localStorage.setItem(isolatedStorageKey, JSON.stringify(updated)); } catch { /* Keep the in-memory position usable. */ }
+    save({ ...portfolio, USDG: { ...portfolio.USDG, wallet: portfolio.USDG.wallet + usdgDelta } }, `${isolatedTransaction.market.symbol} / USDG position updated`);
   }
   async function collateral(a: Asset, value: boolean) {
     if (collateralPending.current) return;
@@ -170,7 +194,7 @@ export default function App() {
           orbit
         </Link>
         <nav aria-label="Main navigation">
-          <NavLink to="/dashboard" end>
+          <NavLink to="/dashboard">
             Dashboard
           </NavLink>
           <NavLink to="/markets">
@@ -202,23 +226,27 @@ export default function App() {
                 {robinhood.name.toUpperCase()}
               </span>
               <span className="live-dot" />{" "}
-              <span className="subtle">Lending market</span>
+              <span className="subtle">{isolatedCategory ? 'Isolated markets' : 'Core market'}</span>
             </div>
             <div className="overview-heading">
               <h1>
                 {page === "dashboard"
                   ? "Your assets. More possibilities."
-                  : "Multi-asset lending market."}
+                  : isolatedCategory ? "Isolated lending markets." : "Core lending market."}
               </h1>
               <button className="text-button" onClick={() => setHelp(true)}>
                 How lending works <ArrowUpRight size={16} />
               </button>
             </div>
             <div className="overview-stats">
-              {page === "dashboard" ? (
+              {page === 'dashboard' && isolatedCategory ? <>
+                <div><span>Isolated net worth</span><strong>{money(isolatedSummary.collateral - isolatedSummary.debt)}</strong></div>
+                <div><span>Total collateral value</span><strong>{money(isolatedSummary.collateral)}</strong></div>
+                <div><span>Total USDG debt</span><strong>{money(isolatedSummary.debt)}</strong></div>
+              </> : page === "dashboard" ? (
                 <>
                   <div>
-                    <span>Net worth</span>
+                    <span>Core market net worth</span>
                     <strong>{money(t.supplied - t.debt)}</strong>
                   </div>
                   <div>
@@ -240,7 +268,7 @@ export default function App() {
               ) : (
                 <>
                   <div>
-                    <span>Total market size</span>
+                    <span>{isolatedCategory ? 'Total collateral' : 'Total market size'}</span>
                     <strong>${compact(market.supply)}</strong>
                   </div>
                   <div>
@@ -248,8 +276,8 @@ export default function App() {
                     <strong>${compact(market.debt)}</strong>
                   </div>
                   <div>
-                    <span>Available liquidity</span>
-                    <strong>${compact(market.supply - market.debt)}</strong>
+                    <span>{isolatedCategory ? 'Remaining debt capacity' : 'Available liquidity'}</span>
+                    <strong>${compact(isolatedCategory ? isolatedMarkets.reduce((sum, m) => { const t = isolatedTotals(m, isolatedPortfolio[m.symbol]); return sum + Math.min(t.remaining, t.liquidity); }, 0) : market.supply - market.debt)}</strong>
                   </div>
                 </>
               )}
@@ -268,7 +296,7 @@ export default function App() {
             <Route
               path="/dashboard"
               element={
-                <Dashboard
+                <><PositionTabs selected={isolatedCategory ? 'isolated' : 'core'} />{isolatedCategory ? <IsolatedDashboard portfolio={isolatedPortfolio} connected={connected} usdgWallet={visible.USDG.wallet} onConnect={showWallet} onAction={(market, action) => setIsolatedTransaction({ market, action })} /> : <Dashboard
                   portfolio={visible}
                   connected={connected}
                   onConnect={showWallet}
@@ -276,15 +304,16 @@ export default function App() {
                     setTransaction({ asset, action })
                   }
                   onCollateral={collateral}
-                  onDetail={setDetail}
-                />
+                />}</>
               }
             />
             <Route
               path="/markets"
-              element={<Markets portfolio={portfolio} />}
+              element={<Markets portfolio={portfolio} isolatedPortfolio={isolatedPortfolio} />}
             />
             <Route path="/markets/:symbol" element={<ReserveOverview portfolio={portfolio} connected={connected} onConnect={showWallet} onAction={(asset, action) => setTransaction({ asset, action })} />} />
+            <Route path="/markets/isolated/:symbol" element={<IsolatedOverview key={pathname} portfolio={isolatedPortfolio} connected={connected} usdgWallet={visible.USDG.wallet} onConnect={showWallet} onAction={(market, action) => setIsolatedTransaction({ market, action })} />} />
+            <Route path="/dashboard/isolated/:symbol" element={<Navigate to="/dashboard?category=isolated" replace />} />
             <Route
               path="*"
               element={
@@ -329,6 +358,7 @@ export default function App() {
           </button>
         </div>
       </footer>
+      {isolatedTransaction && <IsolatedTransaction market={isolatedTransaction.market} position={isolatedPortfolio[isolatedTransaction.market.symbol]} usdgWallet={visible.USDG.wallet} action={isolatedTransaction.action} beforeSubmit={beforeTransaction} onComplete={completeIsolated} onClose={() => setIsolatedTransaction(null)} />}
       {transaction && (
         <Transaction
           asset={transaction.asset}
@@ -356,8 +386,7 @@ export default function App() {
             <Layers3 size={30} />
             <h3>Supply → Collateralize → Borrow</h3>
             <p>
-              Supply USDG, ETH or NVDA and enable collateral to borrow USDG or
-              ETH. Repay your debt to release collateral.
+              In the core market, supply USDG, ETH, NVDA or SPY and combine eligible collateral to borrow. Isolated markets use a single collateral asset to borrow USDG. Repay your debt to release collateral.
             </p>
             <h3>Monitor your health factor</h3>
             <p>
@@ -366,8 +395,8 @@ export default function App() {
               Preview the impact before borrowing or withdrawing.
             </p>
             <h3>Asset-specific risk</h3>
-            <p>Each asset has its own collateral limits, supply cap and borrow cap. Available liquidity determines how much you can borrow or withdraw.</p>
-            <p>Tokenized stocks can be supplied and used as collateral, but cannot be borrowed. Market closures and price gaps may increase liquidation risk.</p>
+            <p>There are no supply caps. NVDA and SPY have borrow caps; isolated markets have separate USDG debt ceilings. Available liquidity also limits borrowing and withdrawals.</p>
+            <p>Tokenized securities can be supplied and borrowed in the core market. PONS, CASHCAT and AI are collateral-only assets in isolated markets. Their collateral and health factors cannot be combined with other positions.</p>
           </div>
         </Modal>
       )}

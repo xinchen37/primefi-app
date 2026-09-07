@@ -1,4 +1,4 @@
-export type Symbol = "USDG" | "ETH" | "NVDA";
+export type Symbol = "USDG" | "ETH" | "NVDA" | "SPY";
 export type Action = "supply" | "withdraw" | "borrow" | "repay";
 export interface Asset {
   symbol: Symbol;
@@ -29,14 +29,14 @@ export const assets: Asset[] = [
     price: 1,
     supplyApy: 4.32,
     borrowApy: 6.75,
-    ltv: 0.85,
-    threshold: 0.9,
+    ltv: 0.75,
+    threshold: 0.8,
     penalty: 5,
     total: 4200000,
     borrowed: 3360000,
-    supplyCap: 10000000,
-    borrowCap: 6000000,
-    reserveFactor: 25,
+    supplyCap: Infinity,
+    borrowCap: Infinity,
+    reserveFactor: 10,
   },
   {
     symbol: "ETH",
@@ -44,40 +44,47 @@ export const assets: Asset[] = [
     price: 2450,
     supplyApy: 2.18,
     borrowApy: 4.54,
-    ltv: 0.7,
+    ltv: 0.73,
     threshold: 0.8,
-    penalty: 8,
+    penalty: 7,
     total: 1800,
     borrowed: 1080,
-    supplyCap: 4000,
-    borrowCap: 2500,
-    reserveFactor: 25,
+    supplyCap: Infinity,
+    borrowCap: Infinity,
+    reserveFactor: 15,
   },
   {
     symbol: "NVDA",
     name: "NVIDIA · Tokenized stock",
     price: 125,
-    supplyApy: 0,
-    borrowApy: 0,
-    ltv: 0.6,
+    supplyApy: 1.85,
+    borrowApy: 5.25,
+    ltv: 0.58,
     threshold: 0.7,
     penalty: 10,
     total: 12500,
-    borrowed: 0,
-    supplyCap: 20000,
-    borrowCap: 0,
-    reserveFactor: 0,
+    borrowed: 800,
+    supplyCap: Infinity,
+    borrowCap: 250000 / 125,
+    reserveFactor: 20,
+  },
+  {
+    symbol: 'SPY', name: 'SPY · Tokenized ETF', price: 650,
+    supplyApy: 1.65, borrowApy: 4.8, ltv: .65, threshold: .75, penalty: 8,
+    total: 2000, borrowed: 200, supplyCap: Infinity, borrowCap: 300000 / 650, reserveFactor: 20,
   },
 ];
 export const initial: Portfolio = {
   USDG: { wallet: 8540, supplied: 5000, debt: 1800, collateral: true },
   ETH: { wallet: 2.45, supplied: 2, debt: 0, collateral: true },
   NVDA: { wallet: 20, supplied: 10, debt: 0, collateral: true },
+  SPY: { wallet: 8, supplied: 0, debt: 0, collateral: true },
 };
 export const empty: Portfolio = {
   USDG: { wallet: 13540, supplied: 0, debt: 0, collateral: true },
   ETH: { wallet: 4.45, supplied: 0, debt: 0, collateral: true },
   NVDA: { wallet: 30, supplied: 0, debt: 0, collateral: true },
+  SPY: { wallet: 8, supplied: 0, debt: 0, collateral: true },
 };
 export const money = (n: number) =>
   new Intl.NumberFormat("en-US", {

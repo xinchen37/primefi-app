@@ -13,17 +13,18 @@ import {
 describe("一期借贷模拟风控", () => {
   it("按不同清算阈值计算健康度", () => {
     expect(totals(initial).hf).toBeCloseTo(
-      (5000 * 0.9 + 4900 * 0.8 + 1250 * 0.7) / 1800,
+      (5000 * 0.8 + 4900 * 0.8 + 1250 * 0.7) / 1800,
     );
   });
-  it("空仓位不能借款，股票始终不可借", () => {
+  it("空仓位不能借款，核心池证券可借", () => {
     expect(maximum("borrow", assets[0], empty)).toBe(0);
-    expect(maximum("borrow", assets[2], initial)).toBe(0);
+    expect(maximum("borrow", assets[2], initial)).toBeGreaterThan(0);
+    expect(maximum("borrow", assets[3], initial)).toBeGreaterThan(0);
   });
   it("存入后钱包减少，抵押额度与储备同步增加", () => {
     const next = preview(initial, assets[0], "supply", 100, true);
     expect(next.USDG.wallet).toBe(initial.USDG.wallet - 100);
-    expect(totals(next).limit - totals(initial).limit).toBeCloseTo(85);
+    expect(totals(next).limit - totals(initial).limit).toBeCloseTo(75);
     expect(reserve(assets[0], next).total - assets[0].total).toBe(100);
   });
   it("拦截超余额与非有限数量", () => {

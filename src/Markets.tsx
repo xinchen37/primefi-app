@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { MarketCategoryTabs } from './MarketNavigation';
+import IsolatedMarkets from './IsolatedMarkets';
+import type { IsolatedPortfolio } from './isolated';
 import { Search, ArrowUpRight } from "lucide-react";
 import {
   assets,
@@ -11,16 +14,22 @@ import {
 import { AssetName } from "./components";
 export default function Markets({
   portfolio,
+  isolatedPortfolio,
 }: {
   portfolio: Portfolio;
+  isolatedPortfolio: IsolatedPortfolio;
 }) {
   const [search, setSearch] = useState("");
+  const [params] = useSearchParams();
+  const isolated = params.get('category') === 'isolated';
+  if (isolated) return <><MarketCategoryTabs isolated /><IsolatedMarkets portfolio={isolatedPortfolio} /></>;
   return (
     <>
+      <MarketCategoryTabs isolated={false} />
       <div className="section-heading">
         <div>
-          <h2>Market overview</h2>
-          <p>One shared market. Three assets with independent rates and risk parameters.</p>
+          <h2>Core market</h2>
+          <p>Combine eligible USDG, ETH, NVDA and SPY collateral within the core market.</p>
         </div>
         <label className="search">
           <Search size={17} />
@@ -42,7 +51,7 @@ export default function Markets({
               <th>Total borrowed</th>
               <th>Borrow APY</th>
               <th>Utilization</th>
-              <th>Supply cap used</th>
+              <th>Borrow cap</th>
               <th />
             </tr>
           </thead>
@@ -82,13 +91,8 @@ export default function Markets({
                     </td>
                     <td>{((r.borrowed / r.total) * 100).toFixed(1)}%</td>
                     <td>
-                      {((r.total / a.supplyCap) * 100).toFixed(1)}%
-                      <div className="progress">
-                        <i
-                          style={{ width: `${(r.total / a.supplyCap) * 100}%` }}
-                        />
-                      </div>
-                      <small>{money(a.supplyCap * a.price)}</small>
+                      {Number.isFinite(a.borrowCap) ? money(a.borrowCap * a.price) : 'No limit'}
+                      {Number.isFinite(a.borrowCap) && <small>{compact(a.borrowCap)} {a.symbol}</small>}
                     </td>
                     <td>
                       <Link
@@ -113,14 +117,14 @@ export default function Markets({
           <span>01 / ASSET-SPECIFIC RISK</span>
           <h3>Different assets. Different limits.</h3>
           <p>
-            Maximum LTV is 85% for USDG, 70% for ETH and 60% for tokenized stocks. Each asset has independent supply and borrow caps.
+            Maximum LTV is 75% for USDG, 73% for ETH, 65% for SPY and 58% for NVDA. No supply caps apply.
           </p>
         </div>
         <div>
           <span>02 / TOKENIZED STOCKS</span>
           <h3>More possibilities for your holdings.</h3>
           <p>
-            Supply NVDA and use it as collateral to access liquidity. Stock borrowing is not available. Consider market closures and oracle price gaps before borrowing against your holdings.
+            Supply or borrow NVDA and SPY. Borrow caps are $250K for NVDA and $300K for SPY. Tokenized securities track underlying prices and carry issuer and price-gap risks.
           </p>
         </div>
       </div>

@@ -8,7 +8,7 @@ export const explanations = {
   'Liquidation threshold': 'This percentage determines how much an asset contributes to the collateral value used in your health factor. If your total debt exceeds your collateral value weighted by liquidation thresholds, your health factor falls below 1 and your position may be liquidated.',
   'Liquidation penalty': 'When a position is liquidated, a liquidator repays debt in exchange for collateral. The liquidation penalty is the additional collateral value awarded to the liquidator, increasing the collateral you lose.',
   'APY, variable': 'The annual percentage yield on borrowing changes with market conditions and reserve utilization. Your borrowing cost may increase or decrease over time.',
-  'Total supplied': 'The amount currently supplied to this reserve, compared with its supply cap. The cap limits exposure to the asset and helps manage risk. New supplies are restricted when the cap is reached.',
+  'Total supplied': 'The amount currently supplied to this reserve. There is no supply cap. Borrowing remains limited by collateral requirements, available liquidity and any applicable borrow cap or debt ceiling.',
   'Total borrowed': 'The amount currently borrowed from this reserve, compared with its borrow cap. New borrowing is also limited by available liquidity and your collateral-backed borrowing power.',
   'Reserve factor': 'The percentage of borrowing interest allocated to the protocol reserve through the collector contract. The remaining interest contributes to supplier earnings.',
 } as const;

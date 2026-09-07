@@ -8,15 +8,16 @@ import { robinhood } from './wallet';
 import robinhoodIcon from './images/icon/robinhood.png';
 
 function CapSummary({ amount, cap, asset, borrow = false }: { amount: number; cap: number; asset: Asset; borrow?: boolean }) {
-  const percent = cap ? amount / cap * 100 : 0;
+  const limited = borrow && Number.isFinite(cap);
+  const percent = limited ? amount / cap * 100 : 0;
   return <div className="reserve-cap-summary">
-    <div className="cap-ring" role="img" aria-label={`${percent.toFixed(2)}% of ${borrow ? 'borrow' : 'supply'} cap used`}>
+    {limited && <div className="cap-ring" role="img" aria-label={`${percent.toFixed(2)}% of borrow cap used`}>
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" className="ring-track" /><circle cx="50" cy="50" r="43" className="ring-fill" pathLength="100" strokeDasharray={`${Math.min(100, Math.max(0, percent))} 100`} /></svg>
       <strong>{percent.toFixed(2)}%</strong>
-    </div>
-    <div><span>Total {borrow ? 'borrowed' : 'supplied'} <InfoTip label={borrow ? 'Total borrowed' : 'Total supplied'} /></span><strong>{compact(amount)} <em>of</em> {compact(cap)} <small>{asset.symbol}</small></strong><small title={`${money(amount * asset.price)} of ${money(cap * asset.price)}`}>${compact(amount * asset.price)} of ${compact(cap * asset.price)}</small></div>
-    <div><span>{borrow ? 'APY, variable' : 'Supply APY'} {borrow && <InfoTip label="APY, variable" />}</span><strong className={borrow ? '' : 'apy'}>{(borrow ? asset.borrowApy : asset.supplyApy).toFixed(2)}%</strong></div>
-    {borrow && <div><span>Borrow cap</span><strong>{compact(cap)} <small>{asset.symbol}</small></strong><small title={money(cap * asset.price)}>${compact(cap * asset.price)}</small></div>}
+    </div>}
+    <div><span>Total {borrow ? 'borrowed' : 'supplied'} <InfoTip label={borrow ? 'Total borrowed' : 'Total supplied'} /></span><strong>{compact(amount)} {limited && <><em>of</em> {compact(cap)} </>}<small>{asset.symbol}</small></strong><small title={money(amount * asset.price)}>${compact(amount * asset.price)}{limited && <> of ${compact(cap * asset.price)}</>}</small></div>
+    <div className="reserve-stat-divider"><span>{borrow ? 'APY, variable' : 'Supply APY'} {borrow && <InfoTip label="APY, variable" />}</span><strong className={borrow ? '' : 'apy'}>{(borrow ? asset.borrowApy : asset.supplyApy).toFixed(2)}%</strong></div>
+    {borrow && <div className="reserve-stat-divider"><span>Borrow cap</span><strong>{limited ? `$${compact(cap * asset.price)}` : 'No limit'}</strong>{limited && <small>{compact(cap)} {asset.symbol}</small>}</div>}
   </div>;
 }
 
@@ -47,7 +48,7 @@ export default function ReserveOverview(props: Props) {
   if (!asset) return <section className="empty not-found"><h1>Asset not found</h1><p>This asset is not available in this market.</p><Link to="/markets" className="primary">Back to markets</Link></section>;
   const r = reserve(asset, props.portfolio);
   return <div className="reserve-page">
-    <div className="reserve-breadcrumb"><Link className="secondary" to="/markets"><ArrowLeft size={16} />Go back</Link><span><img src={robinhoodIcon} width="24" height="24" alt="" />{robinhood.name}</span></div>
+    <div className="reserve-breadcrumb"><Link className="secondary" to="/markets"><ArrowLeft size={16} />Go back</Link><span><img src={robinhoodIcon} width="24" height="24" alt="" />{robinhood.name} · Core Market</span></div>
     <section className="reserve-heading" aria-label="Reserve overview"><div className="reserve-identity"><Token symbol={asset.symbol} /><div><span>{asset.symbol}</span><h1>{asset.name}</h1></div></div><dl className="reserve-metrics">
       {[['Reserve size', `$${compact(r.total * asset.price)}`], ['Available liquidity', `$${compact(Math.max(0, r.total - r.borrowed) * asset.price)}`], ['Utilization rate', `${(r.total ? r.borrowed / r.total * 100 : 0).toFixed(2)}%`], ['Oracle price', money(asset.price)]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl></section>
@@ -55,7 +56,7 @@ export default function ReserveOverview(props: Props) {
       <section className="reserve-section"><h3>Supply Info</h3><div className="reserve-section-body"><CapSummary amount={r.total} cap={asset.supplyCap} asset={asset} /><RateChart key={`${asset.symbol}-supply`} label="Supply APY" rate={asset.supplyApy} />
         <div className="collateral-title"><h4>Collateral usage</h4><span><Check size={17} />Can be collateral</span></div>
         <dl className="reserve-parameters">{([['Max LTV', `${(asset.ltv * 100).toFixed(2)}%`], ['Liquidation threshold', `${(asset.threshold * 100).toFixed(2)}%`], ['Liquidation penalty', `${asset.penalty.toFixed(2)}%`]] as const).map(([label, value]) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{value}</dd></div>)}</dl>
-        {asset.symbol === 'NVDA' && <Note>Tokenized stock collateral is exposed to market closures and price gaps. Monitor your health factor when borrowing.</Note>}
+        {(asset.symbol === 'NVDA' || asset.symbol === 'SPY') && <Note>Tokenized securities track the underlying price but are not shares of the underlying stock or ETF. Issuer restrictions and price gaps can affect collateral and debt.</Note>}
       </div></section>
       <section className="reserve-section"><h3>Borrow info</h3><div className="reserve-section-body">{asset.borrowCap > 0 ? <><CapSummary amount={r.borrowed} cap={asset.borrowCap} asset={asset} borrow /><RateChart key={`${asset.symbol}-borrow`} label="Borrow APY, variable" rate={asset.borrowApy} borrow />
         <section className="collector-info" aria-label="Collector Info">

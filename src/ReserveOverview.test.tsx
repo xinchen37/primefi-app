@@ -17,7 +17,10 @@ describe('reserve overview', () => {
     expect(html).toContain('href="/markets"');
     expect(html).toContain('Collector Info');
     expect(html).toContain('Reserve factor');
-    expect(html).toContain('25.00');
+    expect(html).toContain('15.00');
+    expect(html).toContain('No limit');
+    expect(html).not.toContain('supply cap used');
+    expect(html).not.toContain('$∞');
     expect(html).toContain('Collector Contract');
     expect(html).not.toContain('Interest rate</dt>');
   });
@@ -25,10 +28,12 @@ describe('reserve overview', () => {
     const html = render('usdg', true);
     for (const label of ['Wallet balance', '8,540', 'Available to supply', 'Available to borrow', 'Withdraw', 'Repay', 'Health factor']) expect(html).toContain(label);
   });
-  it('does not render borrow history for non-borrowable stock', () => {
+  it('renders capped borrowing for tokenized securities', () => {
     const html = render('nvda');
-    expect(html).toContain('Borrowing is not available');
-    expect(html).not.toContain('Borrow APY, variable');
+    expect(html).not.toContain('Borrowing is not available');
+    expect(html).toContain('Borrow APY, variable');
+    expect(html).toContain('250K');
+    expect(render('spy')).toContain('300K');
     expect(html).not.toContain('NaN');
   });
   it('handles unknown assets and case-insensitive direct routes', () => {

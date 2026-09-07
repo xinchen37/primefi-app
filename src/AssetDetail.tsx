@@ -34,10 +34,10 @@ export default function AssetDetail({
         ["Liquidation threshold", `${a.threshold * 100}%`],
         ["Liquidation penalty", `${a.penalty}%`],
         ["Available liquidity", `${number(r.total - r.borrowed)} ${a.symbol}`],
-        ["Supply cap", `${number(a.supplyCap)} ${a.symbol}`],
+        ["Supply cap", "No limit"],
         [
           "Borrow cap",
-          a.borrowCap ? `${number(a.borrowCap)} ${a.symbol}` : "0 · Borrowing disabled",
+          Number.isFinite(a.borrowCap) ? `${number(a.borrowCap)} ${a.symbol}` : "No limit",
         ],
         [
           "Est. liquidation price",
@@ -56,7 +56,7 @@ export default function AssetDetail({
       <Note>
         This estimate assumes all other asset prices and debts remain unchanged. Actual liquidation depends on your account's overall health factor.
       </Note>
-      {a.symbol === "NVDA" && (
+      {(a.symbol === "NVDA" || a.symbol === "SPY") && (
         <div className="warning">
           Market closures, issuer freezes and price depegs may affect collateral safety.
         </div>

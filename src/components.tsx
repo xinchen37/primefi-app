@@ -2,21 +2,39 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
 import { X, ArrowUpRight, Info } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from 'react-router-dom';
 import { type Asset, type Symbol } from "./model";
 import usdgIcon from './images/icon/usdg.svg';
 import ethIcon from './images/icon/eth.svg';
 import nvdaIcon from './images/icon/nvda.png';
-const tokenIcons: Record<Symbol, string> = { USDG: usdgIcon, ETH: ethIcon, NVDA: nvdaIcon };
+import ponsIcon from './images/icon/pons.jpeg';
+import cashcatIcon from './images/icon/cashcat.png';
+import aiIcon from './images/icon/ai.png';
+const tokenIcons: Partial<Record<string, string>> = {
+  USDG: usdgIcon, ETH: ethIcon, NVDA: nvdaIcon,
+  PONS: ponsIcon, CASHCAT: cashcatIcon, AI: aiIcon,
+};
 export function Token({
   symbol,
   small = false,
 }: {
-  symbol: Symbol;
+  symbol: Symbol | 'PONS' | 'CASHCAT' | 'AI';
   small?: boolean;
 }) {
+  const framed = symbol === 'PONS' || symbol === 'CASHCAT' || symbol === 'AI';
+  if (!tokenIcons[symbol]) return <span className={`token token-letter ${small ? 'small' : ''}`} aria-hidden="true">{symbol === 'CASHCAT' ? 'C' : symbol.slice(0, 2)}</span>;
   return (
-    <img className={`token ${small ? "small" : ""}`} src={tokenIcons[symbol]} alt="" width={33} height={33} />
+    <img className={`token ${framed ? 'token-framed' : ''} ${small ? "small" : ""}`} src={tokenIcons[symbol]} alt="" width={33} height={33} />
   );
+}
+export function TokenPair({ primary, secondary }: {
+  primary: Symbol | 'PONS' | 'CASHCAT' | 'AI';
+  secondary: Symbol | 'PONS' | 'CASHCAT' | 'AI';
+}) {
+  return <span className="token token-pair" aria-hidden="true">
+    <Token symbol={primary} />
+    <span className="token-pair-badge"><Token symbol={secondary} small /></span>
+  </span>;
 }
 export function AssetName({ asset }: { asset: Asset }) {
   return (
@@ -94,10 +112,10 @@ export function Note({ children }: { children: ReactNode }) {
     </div>
   );
 }
-export function DetailButton({ onClick }: { onClick: () => void }) {
+export function DetailLink({ to, label }: { to: string; label: string }) {
   return (
-    <button className="icon-button" aria-label="View asset details" onClick={onClick}>
+    <Link className="icon-button" aria-label={label} to={to}>
       <ArrowUpRight size={17} />
-    </button>
+    </Link>
   );
 }

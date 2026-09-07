@@ -1,5 +1,5 @@
 import { ArrowDownLeft, ArrowUpRight, ShieldCheck, Wallet } from "lucide-react";
-import { AssetName, Toggle, Health, DetailButton } from "./components";
+import { AssetName, Toggle, Health, DetailLink } from "./components";
 import {
   assets,
   type Portfolio,
@@ -16,7 +16,6 @@ interface Props {
   onConnect: () => void;
   onAction: (a: Asset, action: Action) => void;
   onCollateral: (a: Asset, v: boolean) => void;
-  onDetail: (a: Asset) => void;
 }
 export default function Dashboard({
   portfolio: p,
@@ -24,7 +23,6 @@ export default function Dashboard({
   onConnect,
   onAction,
   onCollateral,
-  onDetail,
 }: Props) {
   const t = totals(p);
   return (
@@ -211,7 +209,7 @@ export default function Dashboard({
             <Empty
               connected={connected}
               onConnect={onConnect}
-              text="Supply collateral to borrow USDG or ETH."
+              text="Supply core market collateral to borrow USDG, ETH, NVDA or SPY."
             />
           )}
         </section>
@@ -266,7 +264,7 @@ export default function Dashboard({
                           >
                             Supply
                           </button>
-                          <DetailButton onClick={() => onDetail(a)} />
+                          <DetailLink to={`/markets/${a.symbol.toLowerCase()}`} label={`View ${a.symbol} details`} />
                         </div>
                       </td>
                     </tr>
@@ -275,8 +273,7 @@ export default function Dashboard({
             </table>
           </div>
           <div className="table-foot">
-            Tokenized stocks can be used as collateral and currently earn no
-            interest.
+            Combine eligible core assets as collateral. Supply amounts are not capped.
           </div>
         </section>
         <section className="panel">
@@ -329,7 +326,7 @@ export default function Dashboard({
                           >
                             Borrow
                           </button>
-                          <DetailButton onClick={() => onDetail(a)} />
+                          <DetailLink to={`/markets/${a.symbol.toLowerCase()}`} label={`View ${a.symbol} details`} />
                         </div>
                       </td>
                     </tr>
