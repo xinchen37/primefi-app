@@ -27,6 +27,27 @@
 .reserve-breadcrumb { gap:20px; margin-bottom:32px; }
 .reserve-breadcrumb img { border-radius:7px; }
 .reserve-heading { display:flex; align-items:center; gap:36px; margin-bottom:38px; }
+.lending-dashboard { padding-top:32px; }
+.lending-dashboard h1 { font-size:32px; font-weight:650; }
+.lending-dashboard .panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+.lending-dashboard .panel-title h3,
+.lending-dashboard .panel-title > .subtle {
+  margin: 0;
+  line-height: 24px;
+}
+.lending-notice { padding:24px; }
+.lending-summary { gap:40px; flex-wrap:wrap; padding:28px 0; }
+.lending-category-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #e6e3ed; }
+.lending-category-toolbar .market-tabs { margin:0; padding:0; border:0; }
+.dashboard-route-content > .risk-footer { max-width:1240px; margin:24px auto 0; }
+@media (max-width:1360px) { .dashboard-route-content > .risk-footer { margin-left:5%; margin-right:5%; } }
 .reserve-identity { display:flex; align-items:center; gap:14px; min-width:190px; }
 .reserve-identity > .token { width:46px; height:46px; }
 .reserve-identity h1 { font-size:24px; font-weight:650; line-height:1.25; margin:5px 0 0; max-width:230px; }

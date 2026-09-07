@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   NavLink,
@@ -21,19 +21,14 @@ import {
   X,
   CheckCircle2,
 } from "lucide-react";
-import Dashboard from "./Dashboard";
+import LendingDashboard from './lending/LendingDashboard';
 import robinhoodIcon from './images/icon/robinhood.png';
 import Markets from "./Markets";
 import InfoTip from './InfoTip';
 import ReserveOverview from "./ReserveOverview";
 import IsolatedOverview from './IsolatedOverview';
-import IsolatedDashboard from './IsolatedDashboard';
-import IsolatedTransaction from './IsolatedTransaction';
-import { PositionTabs } from './MarketNavigation';
-import { isolatedMarkets, isolatedTotals, loadIsolated, isolatedStorageKey, type IsolatedMarket } from './isolated';
-import AssetDetail from "./AssetDetail";
-import Transaction from "./Transaction";
-import { Modal } from "./components";
+import { isolatedMarkets, isolatedTotals, loadIsolated } from './isolated';
+import { Modal, Note } from "./components";
 import {
   assets,
   initial,
@@ -85,23 +80,13 @@ export default function App() {
   const { open } = useAppKit();
   const { switchChainAsync } = useSwitchChain();
   const config = useConfig();
-  const collateralPending = useRef(false);
-  const [isolatedPortfolio, setIsolatedPortfolio] = useState(loadIsolated);
-  const [isolatedTransaction, setIsolatedTransaction] = useState<{ market: IsolatedMarket; action: Action } | null>(null);
-  const [portfolio, setPortfolio] = useState<Portfolio>(load),
+  const [isolatedPortfolio] = useState(loadIsolated);
+  const [portfolio] = useState<Portfolio>(load),
     [help, setHelp] = useState(false),
-    [detail, setDetail] = useState<Asset | null>(null),
-    [transaction, setTransaction] = useState<{
-      asset: Asset;
-      action: Action;
-    } | null>(null),
     [toast, setToast] = useState("");
   useEffect(() => {
     document.title = `${isolatedTitle ? `${isolatedTitle} / USDG` : reserveTitle || (page === "dashboard" ? "Dashboard" : page === "markets" ? "Markets" : "Page not found")} · Orbit`;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    setDetail(null);
-    setTransaction(null);
-    setIsolatedTransaction(null);
     setHelp(false);
     setToast("");
   }, [pathname, search, page, reserveTitle, isolatedTitle]);
@@ -152,40 +137,6 @@ export default function App() {
     },
     { supply: 0, debt: 0 },
   );
-  function save(p: Portfolio, message: string) {
-    setPortfolio(p);
-    try {
-      localStorage.setItem("orbit-demo-v1", JSON.stringify(p));
-    } catch {
-      /* In-memory demo remains usable. */
-    }
-    setToast(message);
-  }
-  function completeIsolated(next: import('./isolated').IsolatedPosition, usdgDelta: number) {
-    if (!isolatedTransaction) return;
-    const updated = { ...isolatedPortfolio, [isolatedTransaction.market.symbol]: next };
-    setIsolatedPortfolio(updated);
-    try { localStorage.setItem(isolatedStorageKey, JSON.stringify(updated)); } catch { /* Keep the in-memory position usable. */ }
-    save({ ...portfolio, USDG: { ...portfolio.USDG, wallet: portfolio.USDG.wallet + usdgDelta } }, `${isolatedTransaction.market.symbol} / USDG position updated`);
-  }
-  async function collateral(a: Asset, value: boolean) {
-    if (collateralPending.current) return;
-    const next = structuredClone(portfolio);
-    next[a.symbol].collateral = value;
-    if (totals(next).hf < 1.01) {
-      setToast(
-        "Cannot disable collateral: health factor would be too low. Repay debt first.",
-      );
-      return;
-    }
-    collateralPending.current = true;
-    try {
-      await beforeTransaction();
-      save(next, `${a.symbol} collateral ${value ? "enabled" : "disabled"}`);
-    } catch (error) {
-      setToast(error instanceof Error ? error.message : 'Unable to update collateral. Please try again.');
-    } finally { collateralPending.current = false; }
-  }
   return (
     <div className="app-shell">
       <header className="header">
@@ -218,7 +169,7 @@ export default function App() {
         </div>
       </header>
       <main>
-        {page && (
+        {page && !dashboardMatch && (
           <section className="overview">
             <div className="market-eyebrow">
               <img className="chain-icon large" src={robinhoodIcon} alt="" width={30} height={30} />
@@ -290,29 +241,22 @@ export default function App() {
             </div>
           </section>
         )}
-        <div className="content">
+        <div className={dashboardMatch ? 'dashboard-route-content' : 'content'}>
+          {(marketsMatch || reserveMatch || isolatedMatch) && <Note>Market preview. <Link to="/dashboard">Open Dashboard</Link> for live pool balances and transactions.</Note>}
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/dashboard"
               element={
-                <><PositionTabs selected={isolatedCategory ? 'isolated' : 'core'} />{isolatedCategory ? <IsolatedDashboard portfolio={isolatedPortfolio} connected={connected} usdgWallet={visible.USDG.wallet} onConnect={showWallet} onAction={(market, action) => setIsolatedTransaction({ market, action })} /> : <Dashboard
-                  portfolio={visible}
-                  connected={connected}
-                  onConnect={showWallet}
-                  onAction={(asset, action) =>
-                    setTransaction({ asset, action })
-                  }
-                  onCollateral={collateral}
-                />}</>
+                <LendingDashboard key={search} onConnect={showWallet} beforeSubmit={beforeTransaction} onHelp={() => setHelp(true)} />
               }
             />
             <Route
               path="/markets"
               element={<Markets portfolio={portfolio} isolatedPortfolio={isolatedPortfolio} />}
             />
-            <Route path="/markets/:symbol" element={<ReserveOverview portfolio={portfolio} connected={connected} onConnect={showWallet} onAction={(asset, action) => setTransaction({ asset, action })} />} />
-            <Route path="/markets/isolated/:symbol" element={<IsolatedOverview key={pathname} portfolio={isolatedPortfolio} connected={connected} usdgWallet={visible.USDG.wallet} onConnect={showWallet} onAction={(market, action) => setIsolatedTransaction({ market, action })} />} />
+            <Route path="/markets/:symbol" element={<ReserveOverview portfolio={portfolio} connected={connected} onConnect={showWallet} onAction={() => setToast('Open Dashboard to transact in a deployed pool. SPY is not deployed.')} />} />
+            <Route path="/markets/isolated/:symbol" element={<IsolatedOverview key={pathname} portfolio={isolatedPortfolio} connected={connected} usdgWallet={visible.USDG.wallet} onConnect={showWallet} onAction={() => setToast('This isolated market is not deployed. Transactions are unavailable.')} />} />
             <Route path="/dashboard/isolated/:symbol" element={<Navigate to="/dashboard?category=isolated" replace />} />
             <Route
               path="*"
@@ -358,24 +302,6 @@ export default function App() {
           </button>
         </div>
       </footer>
-      {isolatedTransaction && <IsolatedTransaction market={isolatedTransaction.market} position={isolatedPortfolio[isolatedTransaction.market.symbol]} usdgWallet={visible.USDG.wallet} action={isolatedTransaction.action} beforeSubmit={beforeTransaction} onComplete={completeIsolated} onClose={() => setIsolatedTransaction(null)} />}
-      {transaction && (
-        <Transaction
-          asset={transaction.asset}
-          action={transaction.action}
-          portfolio={portfolio}
-          onClose={() => setTransaction(null)}
-          onComplete={save}
-          beforeSubmit={beforeTransaction}
-        />
-      )}
-      {detail && (
-        <AssetDetail
-          asset={detail}
-          portfolio={portfolio}
-          onClose={() => setDetail(null)}
-        />
-      )}
       {help && (
         <Modal
           title="About this lending market"
@@ -386,7 +312,7 @@ export default function App() {
             <Layers3 size={30} />
             <h3>Supply → Collateralize → Borrow</h3>
             <p>
-              In the core market, supply USDG, ETH, NVDA or SPY and combine eligible collateral to borrow. Isolated markets use a single collateral asset to borrow USDG. Repay your debt to release collateral.
+              Dashboard connects to two independent deployed pools: Stable (USDG and WETH) and Stock (USDG and NVDA). Supply collateral, borrow within that pool, then repay debt to release collateral. WETH is not native ETH.
             </p>
             <h3>Monitor your health factor</h3>
             <p>
@@ -395,8 +321,8 @@ export default function App() {
               Preview the impact before borrowing or withdrawing.
             </p>
             <h3>Asset-specific risk</h3>
-            <p>There are no supply caps. NVDA and SPY have borrow caps; isolated markets have separate USDG debt ceilings. Available liquidity also limits borrowing and withdrawals.</p>
-            <p>Tokenized securities can be supplied and borrowed in the core market. PONS, CASHCAT and AI are collateral-only assets in isolated markets. Their collateral and health factors cannot be combined with other positions.</p>
+            <p>Caps, liquidity and collateral requirements are enforced by the deployed contracts. A transaction is simulated before signing and only marked successful after confirmation.</p>
+            <p>SPY, PONS, CASHCAT and AI are not included in this deployment. Market overview pages remain previews; use Dashboard for live balances and transactions.</p>
           </div>
         </Modal>
       )}

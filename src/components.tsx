@@ -18,7 +18,7 @@ export function Token({
   symbol,
   small = false,
 }: {
-  symbol: Symbol | 'PONS' | 'CASHCAT' | 'AI';
+  symbol: string;
   small?: boolean;
 }) {
   const framed = symbol === 'PONS' || symbol === 'CASHCAT' || symbol === 'AI';
