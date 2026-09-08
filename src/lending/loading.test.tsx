@@ -49,7 +49,8 @@ it('replaces initial skeletons with retry states on error, never empty positions
 it('keeps previous balances visible during refetch and refetch errors', () => {
   state.pending = false;
   state.data = { assets: [{ asset: getLendingConfig(46630).markets[0].assets[0], wallet: 1000000n, supplied: 2000000n, debt: 0n, liquidity: 10000000n, price: 100000000n, supplyApy: 3, borrowApy: 4, ltv: 80, active: true, paused: false, frozen: false, borrowing: true }], collateral: 200000000n, debt: 0n, available: 160000000n, health: 0n, unit: 100000000n };
-  expect(render()).toContain('Refreshing');
+  expect(render()).not.toContain('Refreshing');
+  expect(render()).not.toMatch(/>Refresh<\/button>/);
   expect(render()).toContain('$2.00');
   expect(render()).not.toContain('skeleton');
   state.error = new Error('Refresh failed');

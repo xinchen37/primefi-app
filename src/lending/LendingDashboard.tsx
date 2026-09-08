@@ -74,13 +74,12 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>
     <div className="content lending-dashboard">
-    <div className="lending-category-toolbar"><nav className="market-tabs" aria-label="Market categories"><Link aria-current={!isolated ? 'page' : undefined} to="/dashboard">Core Market</Link><Link aria-current={isolated ? 'page' : undefined} to="/dashboard?category=isolated">Isolated Markets</Link></nav><button className="text-button" onClick={retry} disabled={result.isFetching || !market}>{result.isFetching ? 'Refreshing…' : 'Refresh'}</button></div>
+    <div className="lending-category-toolbar"><nav className="market-tabs" aria-label="Market categories"><Link aria-current={!isolated ? 'page' : undefined} to="/dashboard">Core Market</Link><Link aria-current={isolated ? 'page' : undefined} to="/dashboard?category=isolated">Isolated Markets</Link></nav></div>
       <div className="section-heading"><div><h2>Your positions</h2><p>Earn on your assets. Unlock liquidity from your holdings.</p></div><span className="subtle inline"><ShieldCheck size={15} /> Your assets, your control</span></div>
       {(deployment.error || result.error) && <div className="lending-notice error" role="alert">{lendingError(deployment.error || result.error)} <button className="secondary" onClick={retry}>Retry</button></div>}
       {result.isPaused && <p className="subtle" role="status">Connection unavailable. Updates will resume when you are online.</p>}
       <>
         <div className="position-grid">{table('Your supplies', 'withdraw')}{table('Your borrows', 'repay')}</div><div className="position-grid asset-panels">{table('Assets to supply', 'supply')}{table('Assets to borrow', 'borrow')}</div>
-        <p className="subtle">Each pool has independent collateral and borrowing power. WETH is an ERC-20 token, not native ETH. Available amounts are indicative and verified before signing.</p>
       </>
     {transaction && market && data && account && <LendingTransaction key={`${account}:${market.pool}:${transaction.row.asset.address}:${transaction.action}`} market={market} row={data.assets.find(row => row.asset.address === transaction.row.asset.address) ?? transaction.row} pool={data} account={account} action={transaction.action} beforeSubmit={beforeSubmit} onClose={() => setTransaction(undefined)} />}
   </div></>;
