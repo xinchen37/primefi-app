@@ -306,24 +306,23 @@ export default function App() {
       {help && (
         <Modal
           title="About this lending market"
-          description="Supply, borrow and manage your collateral."
+          description="Supply assets, borrow liquidity and manage your positions."
           onClose={() => setHelp(false)}
         >
           <div className="help-copy">
             <Layers3 size={30} />
-            <h3>Supply → Collateralize → Borrow</h3>
+            <h3>Supply and borrow</h3>
             <p>
-              Dashboard connects to two independent deployed pools: Stable (USDG and WETH) and Stock (USDG and NVDA). Supply collateral, borrow within that pool, then repay debt to release collateral. WETH is not native ETH.
+              Supply supported assets to earn variable interest. Eligible assets enabled as collateral provide borrowing power within the selected pool. Each pool has its own collateral and debt balances; borrowing power cannot be combined across pools.
             </p>
             <h3>Monitor your health factor</h3>
             <p>
               Health factor = collateral value weighted by liquidation
               thresholds ÷ debt value. Below 1, your position may be liquidated.
-              Preview the impact before borrowing or withdrawing.
+              Repaying debt can improve your health factor. Withdrawals are subject to collateral requirements and available liquidity. Review your position before borrowing or withdrawing; estimates may change with prices and accrued interest.
             </p>
-            <h3>Asset-specific risk</h3>
-            <p>Caps, liquidity and collateral requirements are enforced by the deployed contracts. A transaction is simulated before signing and only marked successful after confirmation.</p>
-            <p>SPY, PONS, CASHCAT and AI are not included in this deployment. Market overview pages remain previews; use Dashboard for live balances and transactions.</p>
+            <h3>Rates and risks</h3>
+            <p>Supply and borrow rates change with market utilization. Available borrowing depends on your collateral, pool liquidity and applicable limits. Asset prices can fall, and tokenized securities may experience price gaps. Monitor your positions regularly.</p>
           </div>
         </Modal>
       )}
