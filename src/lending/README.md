@@ -27,6 +27,8 @@ Edit `local-config.ts` to maintain deployments. No backend configuration endpoin
 
 ## Verification
 
+Transaction review rows show current reserve APY, current/estimated health factor, estimated total pool debt and an RPC gas estimate in ETH. Estimates use current prices; accrued interest, price changes and protocol rounding can change the outcome. Collateral-changing projections are withheld for unknown automatic activation or non-default eMode. Supply collateral status is informational, not a new collateral-toggle transaction. Gas estimates exclude approvals and additional L1 fees; estimation failures are displayed, never replaced with mock fees. Wallet confirmation remains authoritative.
+
 `pnpm test` runs deterministic operation/configuration tests without a wallet.
 
 `LENDING_RPC_CHECK=1 pnpm exec vitest run src/lending/rpc.test.ts` runs opt-in read-only testnet integration checks (RPC access required).

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useConfig } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits, type Address, type Hash } from 'viem';
-import { Modal, Note } from '../components';
+import { Modal, Note, Token } from '../components';
 import { labels } from '../Transaction';
 import type { Action } from '../model';
 import { robinhood } from '../network';
@@ -10,6 +10,7 @@ import { createLendingIO, lendingError } from './client';
 import { executeLending, parseAmount, ReceiptPendingError } from './service';
 import { availableAmount, type AssetSnapshot, type PoolSnapshot } from './read';
 import type { LendingMarket } from './config';
+import TransactionDetails from './TransactionDetails';
 
 export default function LendingTransaction({ market, row, pool, account, action, beforeSubmit, onClose }: {
   market: LendingMarket; row: AssetSnapshot; pool: PoolSnapshot; account: Address; action: Action;
@@ -21,7 +22,10 @@ export default function LendingTransaction({ market, row, pool, account, action,
   const lock = useRef(false);
   const max = availableAmount(action, row, pool);
   let validation = '';
+  let parsed: bigint | undefined;
   try { if (parseAmount(input, row.asset.decimals) > max) validation = 'Amount exceeds the available balance or borrowing power.'; } catch (e) { validation = lendingError(e); }
+  if (!input || /^0(?:\.0*)?$/.test(input)) parsed = 0n;
+  else if (!validation) parsed = parseAmount(input, row.asset.decimals);
   async function submit() {
     if (lock.current || validation || done || uncertain) return;
     lock.current = true; setBusy(true); setError(''); setStatus('Checking wallet network…');
@@ -40,8 +44,9 @@ export default function LendingTransaction({ market, row, pool, account, action,
   return <Modal title={`${labels[action]} ${row.asset.symbol}`} description={`${market.name} · ${robinhood.name}`} onClose={() => !busy && onClose()}>
     {done ? <div className="success"><h2>{labels[action]} confirmed</h2><p>{input} {row.asset.symbol}</p></div> : <>
       <div className="amount-heading"><span>Amount</span><span>Up to {formatUnits(max, row.asset.decimals)} {row.asset.symbol}</span></div>
-      <div className="amount-box"><input aria-label="Transaction amount" inputMode="decimal" placeholder="0.00" value={input} disabled={busy || uncertain} onChange={e => setInput(e.target.value)} /><strong>{row.asset.symbol}</strong><button disabled={busy || uncertain} onClick={() => setInput(formatUnits(max, row.asset.decimals))}>MAX</button></div>
-      <Note>{action === 'supply' || action === 'repay' ? 'A separate token approval may be required. Only the entered amount will be approved for this pool. ' : ''}Final availability and collateral safety are checked by contract simulation before signing. {row.asset.symbol === 'WETH' ? 'This operation uses ERC-20 WETH, not native ETH.' : ''}</Note>
+      <div className="amount-box"><input aria-label="Transaction amount" inputMode="decimal" placeholder="0.00" value={input} disabled={busy || uncertain} onChange={e => setInput(e.target.value)} /><Token symbol={row.asset.iconSymbol ?? row.asset.symbol} /><strong>{row.asset.symbol}</strong><button disabled={busy || uncertain} onClick={() => setInput(formatUnits(max, row.asset.decimals))}>MAX</button></div>
+      <TransactionDetails action={action} amount={parsed} row={row} pool={pool} market={market} account={account} busy={busy || uncertain} />
+      {(action === 'supply' || action === 'repay' || row.asset.symbol === 'WETH') && <Note>{action === 'supply' || action === 'repay' ? 'A separate token approval may be required. Only the entered amount will be approved for this pool. ' : ''}{row.asset.symbol === 'WETH' ? 'This operation uses ERC-20 WETH, not native ETH.' : ''}</Note>}
       <div className="detail-row"><span>Pool</span><a className="text-button" href={`${robinhood.blockExplorers.default.url}/address/${market.pool}`} target="_blank" rel="noreferrer">{market.pool.slice(0, 8)}…{market.pool.slice(-6)}</a></div>
       {input && validation && <p className="error" role="alert">{validation}</p>}
     </>}

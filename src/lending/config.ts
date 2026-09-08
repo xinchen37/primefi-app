@@ -40,5 +40,9 @@ export function validateConfig(value: unknown, chainId: number): LendingConfig {
 }
 // Promise-compatible for existing consumers; no fetch or remote source is used.
 export async function loadLendingConfig(chainId: number) {
+  return getLendingConfig(chainId);
+}
+
+export function getLendingConfig(chainId: number) {
   return validateConfig(localLendingConfigs[chainId], chainId);
 }

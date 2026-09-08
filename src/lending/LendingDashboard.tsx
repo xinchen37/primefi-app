@@ -9,10 +9,11 @@ import InfoTip from '../InfoTip';
 import chainIcon from '../images/icon/robinhood.png';
 import { money, type Action } from '../model';
 import { robinhood } from '../network';
-import { loadLendingConfig } from './config';
+import { getLendingConfig, loadLendingConfig } from './config';
 import { lendingClient, lendingError } from './client';
 import { readPool, availableAmount, type AssetSnapshot } from './read';
 import LendingTransaction from './LendingTransaction';
+import { PendingPanel, Skeleton } from './LendingSkeleton';
 
 export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { onConnect: () => void; beforeSubmit: () => Promise<void>; onHelp: () => void }) {
   const { address, isConnected } = useAccount();
@@ -21,7 +22,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   const selected = isolated ? 'stock' : 'stable';
   const categoryName = isolated ? 'Isolated Markets' : 'Core Market';
   const [transaction, setTransaction] = useState<{ row: AssetSnapshot; action: Action }>();
-  const deployment = useQuery({ queryKey: ['lending-config', robinhood.id], queryFn: () => loadLendingConfig(robinhood.id), retry: false, staleTime: Infinity, networkMode: 'always' });
+  const deployment = useQuery({ queryKey: ['lending-config', robinhood.id], queryFn: () => loadLendingConfig(robinhood.id), initialData: () => { try { return getLendingConfig(robinhood.id); } catch { return undefined; } }, retry: false, staleTime: Infinity, networkMode: 'always' });
   const market = deployment.data?.markets.find(m => m.id === selected);
   const account = isConnected ? address : undefined;
   useEffect(() => { setTransaction(undefined); }, [account]);
@@ -33,6 +34,9 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
     retry: 1, refetchInterval: 20_000,
   });
   const data = result.data;
+  const initialLoading = !data && !deployment.error && !result.error && (deployment.isPending || (!!market && result.isPending));
+  const personalLoading = initialLoading && !!account;
+  const retry = () => { void deployment.refetch(); if (market) void result.refetch(); };
   const value = (n: bigint) => data && account ? money(Number(n) / Number(data.unit)) : '—';
   const baseValue = (row: AssetSnapshot, n: bigint) => n * row.price / 10n ** BigInt(row.asset.decimals);
   const supplied = data?.assets.reduce((n, row) => n + baseValue(row, row.supplied), 0n) ?? 0n;
@@ -46,6 +50,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   function act(row: AssetSnapshot, action: Action) { if (!account) onConnect(); else setTransaction({ row, action }); }
   function identity(row: AssetSnapshot) { return <div className="asset-name"><Token symbol={row.asset.iconSymbol ?? row.asset.symbol} /><span><strong>{row.asset.symbol}</strong><small>{row.asset.name ?? row.asset.symbol}</small></span></div>; }
   function table(title: string, action: Action) {
+    if (!data) return <PendingPanel title={title} action={action} market={market} connected={!!account} loading={initialLoading} retry={retry} />;
     const personal = action === 'withdraw' || action === 'repay';
     const rows = data?.assets.filter(r => !personal || (action === 'withdraw' ? r.supplied : r.debt) > 0n) ?? [];
     return <section className="panel"><div className="panel-title"><span className="inline">{personal && (action === 'withdraw' ? <ArrowDownLeft size={19} /> : <ArrowUpRight size={19} />)}<h3>{title}</h3></span><span className="subtle">{personal ? market?.name : action === 'supply' ? 'Available balance' : 'Variable rates'}</span></div>
@@ -64,17 +69,18 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   return <>
     <section className="overview"><div className="market-eyebrow"><img className="chain-icon large" src={chainIcon} alt="" width={30} height={30} /><span>{robinhood.name.toUpperCase()}</span><span className="live-dot" /><span className="subtle">{categoryName}</span></div>
       <div className="overview-heading"><h1>Your assets. More possibilities.</h1><button className="text-button" onClick={onHelp}>How lending works <ArrowUpRight size={16} /></button></div>
-      <div className="overview-stats"><div><span>{isolated ? 'Isolated market' : 'Core market'} net worth</span><strong>{value(supplied - debt)}</strong></div><div><span>Net APY <InfoTip label="Net APY" /></span><strong>{account && netApy !== undefined ? <>{netApy.toFixed(2)}<em>%</em></> : '—'}<span className="stat-tag">Variable yield</span></strong></div><div><span>Available borrow power</span><strong>{data ? value(data.available) : '—'}</strong></div></div>
+      <div className="overview-stats"><div><span>{isolated ? 'Isolated market' : 'Core market'} net worth</span><strong>{personalLoading ? <Skeleton large /> : value(supplied - debt)}</strong></div><div><span>Net APY <InfoTip label="Net APY" /></span><strong>{personalLoading ? <Skeleton /> : account && netApy !== undefined ? <>{netApy.toFixed(2)}<em>%</em></> : '—'}<span className="stat-tag">Variable yield</span></strong></div><div><span>Available borrow power</span><strong>{personalLoading ? <Skeleton large /> : data ? value(data.available) : '—'}</strong></div></div>
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>
     <div className="content lending-dashboard">
-    <div className="lending-category-toolbar"><nav className="market-tabs" aria-label="Market categories"><Link aria-current={!isolated ? 'page' : undefined} to="/dashboard">Core Market</Link><Link aria-current={isolated ? 'page' : undefined} to="/dashboard?category=isolated">Isolated Markets</Link></nav><button className="text-button" onClick={() => { void deployment.refetch(); if (market) void result.refetch(); }} disabled={result.isFetching || !market}>Refresh</button></div>
+    <div className="lending-category-toolbar"><nav className="market-tabs" aria-label="Market categories"><Link aria-current={!isolated ? 'page' : undefined} to="/dashboard">Core Market</Link><Link aria-current={isolated ? 'page' : undefined} to="/dashboard?category=isolated">Isolated Markets</Link></nav><button className="text-button" onClick={retry} disabled={result.isFetching || !market}>{result.isFetching ? 'Refreshing…' : 'Refresh'}</button></div>
       <div className="section-heading"><div><h2>Your positions</h2><p>Earn on your assets. Unlock liquidity from your holdings.</p></div><span className="subtle inline"><ShieldCheck size={15} /> Your assets, your control</span></div>
-      {(deployment.error || result.error) && <div className="lending-notice error" role="alert">{lendingError(deployment.error || result.error)} <button className="secondary" onClick={() => { void deployment.refetch(); if (market) void result.refetch(); }}>Retry</button></div>}
-      {deployment.isPending || (market && result.isPending) ? <div className="empty" role="status">Loading on-chain balances…</div> : data && <>
+      {(deployment.error || result.error) && <div className="lending-notice error" role="alert">{lendingError(deployment.error || result.error)} <button className="secondary" onClick={retry}>Retry</button></div>}
+      {result.isPaused && <p className="subtle" role="status">Connection unavailable. Updates will resume when you are online.</p>}
+      <>
         <div className="position-grid">{table('Your supplies', 'withdraw')}{table('Your borrows', 'repay')}</div><div className="position-grid asset-panels">{table('Assets to supply', 'supply')}{table('Assets to borrow', 'borrow')}</div>
         <p className="subtle">Each pool has independent collateral and borrowing power. WETH is an ERC-20 token, not native ETH. Available amounts are indicative and verified before signing.</p>
-      </>}
-    {transaction && market && data && account && <LendingTransaction key={`${account}:${market.pool}:${transaction.row.asset.address}:${transaction.action}`} market={market} row={transaction.row} pool={data} account={account} action={transaction.action} beforeSubmit={beforeSubmit} onClose={() => setTransaction(undefined)} />}
+      </>
+    {transaction && market && data && account && <LendingTransaction key={`${account}:${market.pool}:${transaction.row.asset.address}:${transaction.action}`} market={market} row={data.assets.find(row => row.asset.address === transaction.row.asset.address) ?? transaction.row} pool={data} account={account} action={transaction.action} beforeSubmit={beforeSubmit} onClose={() => setTransaction(undefined)} />}
   </div></>;
 }

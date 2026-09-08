@@ -1,0 +1,17 @@
+.skeleton {
+  display: inline-block;
+  width: 5.5em;
+  max-width: 100%;
+  height: 1em;
+  vertical-align: middle;
+  border-radius: 6px;
+  background: #ece7f3;
+  animation: breathe 1.6s ease-in-out infinite;
+}
+.large { width: 4.5em; }
+@keyframes breathe {
+  50% { opacity: .45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
