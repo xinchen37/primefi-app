@@ -1,3 +1,4 @@
+import { reservePath } from './marketSelection';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Token, DetailLink } from '../components';
 import type { LendingMarket } from './config';
@@ -19,7 +20,7 @@ export function PendingPanel({ title, action, market, connected, loading, retry 
     {personal && <div className="panel-stats"><div><small>{action === 'withdraw' ? 'Supply balance' : 'Borrow balance'}</small><strong>{pending ? <Skeleton large /> : '—'}</strong></div><div><small>{action === 'withdraw' ? 'Weighted supply APY' : 'Health factor'}</small><strong>{pending ? <Skeleton /> : '—'}</strong></div></div>}
     {personal ? <div className="empty">{!connected ? 'Connect your wallet to view your positions.' : loading ? <span role="status">Loading your positions…</span> : <span>Unable to load positions. <button className="text-button" onClick={retry}>Retry</button></span>}</div> : <>
       <div className="table-wrap"><table><thead><tr><th>Asset</th><th>{action === 'supply' ? 'Balance' : 'Available'}</th><th>{action === 'supply' ? 'Supply APY' : 'Borrow APY'}</th><th /></tr></thead><tbody>
-        {market?.assets.map(asset => <tr key={asset.address}><td><div className="asset-name"><Token symbol={asset.iconSymbol ?? asset.symbol} /><span><strong>{asset.symbol}</strong><small>{asset.name ?? asset.symbol}</small></span></div></td><td>{connected ? cell() : '—'}<small>{connected ? cell() : '—'}</small></td><td>{cell()}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled>{action === 'supply' ? 'Supply' : 'Borrow'}</button>{asset.previewPath && <DetailLink to={asset.previewPath} label={`View ${asset.symbol} market preview`} />}</div></td></tr>)}
+        {market?.assets.map(asset => <tr key={asset.address}><td><div className="asset-name"><Token symbol={asset.iconSymbol ?? asset.symbol} /><span><strong>{asset.symbol}</strong><small>{asset.name ?? asset.symbol}</small></span></div></td><td>{connected ? cell() : '—'}<small>{connected ? cell() : '—'}</small></td><td>{cell()}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled>{action === 'supply' ? 'Supply' : 'Borrow'}</button>{<DetailLink to={reservePath(asset.symbol, market.id === 'stock')} label={`View ${asset.symbol} details`} />}</div></td></tr>)}
       </tbody></table></div>
       <div className="table-foot">{loading ? <span role="status">Loading market data…</span> : <span>Market data unavailable. <button className="text-button" onClick={retry}>Retry</button></span>}</div>
     </>}

@@ -37,6 +37,7 @@ export default function LendingTransaction({ market, row, pool, account, action,
       });
       setHash(tx); setDone(true); setStatus('Transaction confirmed. Your balances are refreshing.');
       void cache.invalidateQueries({ queryKey: ['lending-pool'] });
+      void cache.invalidateQueries({ queryKey: ['lending-market'] });
     } catch (e) {
       if (e instanceof ReceiptPendingError) { setHash(e.hash); setUncertain(true); }
       setError(lendingError(e));

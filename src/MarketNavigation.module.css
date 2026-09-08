@@ -1,0 +1,6 @@
+:global(.market-tabs).tabs { display: flex; flex-wrap: nowrap; min-width: 0; }
+.tabs a { white-space: nowrap; }
+@media (max-width: 540px) {
+  :global(.market-tabs).tabs { width: 100%; gap: 6px; }
+  .tabs a { flex: 1; min-width: 0; text-align: center; padding: 12px 6px; font-size: 14px; }
+}

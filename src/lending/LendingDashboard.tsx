@@ -1,8 +1,10 @@
+import { MarketCategoryTabs } from '../MarketNavigation';
+import { isIsolatedMarket, reservePath } from './marketSelection';
 import { formatNumber, formatBaseValue, formatAssetAmount } from '../utils/formatNumber';
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { formatUnits } from 'viem';
 import { Token, Note, Health, Toggle, DetailLink } from '../components';
 import { ArrowDownLeft, ArrowUpRight, ShieldCheck } from 'lucide-react';
@@ -19,7 +21,7 @@ import { PendingPanel, Skeleton } from './LendingSkeleton';
 export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { onConnect: () => void; beforeSubmit: () => Promise<void>; onHelp: () => void }) {
   const { address, isConnected } = useAccount();
   const [params] = useSearchParams();
-  const isolated = params.get('category') === 'isolated' || params.get('pool') === 'stock';
+  const isolated = isIsolatedMarket(params);
   const selected = isolated ? 'stock' : 'stable';
   const categoryName = isolated ? 'Isolated Markets' : 'Core Market';
   const [transaction, setTransaction] = useState<{ row: AssetSnapshot; action: Action }>();
@@ -61,7 +63,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
         const available = availableAmount(action, row, data!);
         const balance = action === 'withdraw' ? row.supplied : action === 'repay' ? row.debt : available;
         const disabled = result.isError || !row.active || row.paused || ((action === 'supply' || action === 'borrow') && row.frozen) || (action === 'borrow' && !row.borrowing) || (!!account && available <= 0n);
-        return <tr key={row.asset.address}><td>{identity(row)}</td><td><strong title={formatUnits(balance, row.asset.decimals)}>{account ? amount(row, balance) : '—'}</strong><small>{action === 'withdraw' ? `${formatNumber(row.supplyApy, { decimals: 2 })}%` : value(baseValue(row, balance))}</small></td><td>{action === 'withdraw' ? <span title="On-chain collateral status (read only)"><Toggle checked={!!row.collateral} disabled onChange={() => {}} label={`${row.asset.symbol} collateral status (read only)`} /></span> : `${formatNumber((action === 'supply' ? row.supplyApy : row.borrowApy), { decimals: 2 })}%`}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled={disabled} onClick={() => act(row, action)}>{action[0].toUpperCase() + action.slice(1)}</button>{!personal && row.asset.previewPath && <DetailLink to={row.asset.previewPath} label={`View ${row.asset.symbol} market preview`} />}</div></td></tr>;
+        return <tr key={row.asset.address}><td>{identity(row)}</td><td><strong title={formatUnits(balance, row.asset.decimals)}>{account ? amount(row, balance) : '—'}</strong><small>{action === 'withdraw' ? `${formatNumber(row.supplyApy, { decimals: 2 })}%` : value(baseValue(row, balance))}</small></td><td>{action === 'withdraw' ? <span title="On-chain collateral status (read only)"><Toggle checked={!!row.collateral} disabled onChange={() => {}} label={`${row.asset.symbol} collateral status (read only)`} /></span> : `${formatNumber((action === 'supply' ? row.supplyApy : row.borrowApy), { decimals: 2 })}%`}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled={disabled} onClick={() => act(row, action)}>{action[0].toUpperCase() + action.slice(1)}</button>{!personal && <DetailLink to={reservePath(row.asset.symbol, isolated)} label={`View ${row.asset.symbol} details`} />}</div></td></tr>;
       })}</tbody></table></div> : <div className="empty">{account ? 'No positions in this pool yet.' : 'Connect your wallet to view your positions.'}</div>}
       {action === 'repay' && account && <div className="panel-bottom"><span>Borrow power used</span><strong>{formatNumber(powerUsed, { decimals: 2 })}%</strong><div className="progress"><i style={{ width: `${Math.min(100, powerUsed)}%` }} /></div></div>}
       {!personal && <div className="table-foot">{action === 'supply' ? 'Supply assets to earn interest in this pool. Collateral status is managed by the protocol.' : 'Borrow limits depend on this pool’s collateral, reserve caps and available liquidity.'}</div>}
@@ -74,7 +76,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>
     <div className="content lending-dashboard">
-    <div className="lending-category-toolbar"><nav className="market-tabs" aria-label="Market categories"><Link aria-current={!isolated ? 'page' : undefined} to="/dashboard">Core Market</Link><Link aria-current={isolated ? 'page' : undefined} to="/dashboard?category=isolated">Isolated Markets</Link></nav></div>
+    <div className="lending-category-toolbar"><MarketCategoryTabs isolated={isolated} base="/dashboard" /></div>
       <div className="section-heading"><div><h2>Your positions</h2><p>Earn on your assets. Unlock liquidity from your holdings.</p></div><span className="subtle inline"><ShieldCheck size={15} /> Your assets, your control</span></div>
       {(deployment.error || result.error) && <div className="lending-notice error" role="alert">{lendingError(deployment.error || result.error)} <button className="secondary" onClick={retry}>Retry</button></div>}
       {result.isPaused && <p className="subtle" role="status">Connection unavailable. Updates will resume when you are online.</p>}
