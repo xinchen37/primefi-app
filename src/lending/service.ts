@@ -26,9 +26,11 @@ export function parseAmount(input: string, decimals: number) {
   return value;
 }
 export async function reserveData(io: Pick<LendingIO, 'read'>, market: LendingMarket, asset: LendingAsset) {
-  const r = await io.read({ address: market.pool, abi: poolAbi, functionName: 'getReserveData', args: [asset.address] }) as ReserveData;
+  const [r, decimals] = await Promise.all([
+    io.read({ address: market.pool, abi: poolAbi, functionName: 'getReserveData', args: [asset.address] }) as Promise<ReserveData>,
+    io.read({ address: asset.address, abi: tokenAbi, functionName: 'decimals' }),
+  ]);
   if (!r?.aTokenAddress || r.aTokenAddress === zeroAddress || !r.variableDebtTokenAddress || r.variableDebtTokenAddress === zeroAddress) throw new Error('Asset is not listed in this pool.');
-  const decimals = await io.read({ address: asset.address, abi: tokenAbi, functionName: 'decimals' });
   if (Number(decimals) !== asset.decimals) throw new Error('Token decimals do not match the deployment configuration.');
   return r;
 }

@@ -12,13 +12,14 @@ export interface MarketReserve {
 export interface MarketSnapshot { reserves: MarketReserve[]; unit: bigint; supplied: bigint; borrowed: bigint; liquidity: bigint }
 export const reserveValue = (row: MarketReserve, amount: bigint) => amount * row.price / 10n ** BigInt(row.asset.decimals);
 export async function readMarket(io: Pick<LendingIO, 'read'>, market: LendingMarket): Promise<MarketSnapshot> {
-  const [unit, currency] = await Promise.all([
+  const [unit, currency, reserveRows] = await Promise.all([
     io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY_UNIT' }) as Promise<bigint>,
     io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY' }),
+    Promise.all(market.assets.map(asset => reserveData(io, market, asset))),
   ]);
   if (unit <= 0n || currency !== zeroAddress) throw new Error('A USD-denominated oracle with a valid base unit is required.');
-  const reserves = await Promise.all(market.assets.map(async asset => {
-    const r = await reserveData(io, market, asset);
+  const reserves = await Promise.all(market.assets.map(async (asset, index) => {
+    const r = reserveRows[index];
     const [supplied, borrowed, liquidity, price] = await Promise.all([
       io.read({ address: r.aTokenAddress, abi: tokenAbi, functionName: 'totalSupply' }) as Promise<bigint>,
       io.read({ address: r.variableDebtTokenAddress, abi: tokenAbi, functionName: 'totalSupply' }) as Promise<bigint>,

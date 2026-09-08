@@ -7,7 +7,7 @@ const queries = vi.hoisted(() => [] as { queryKey: unknown[]; enabled?: boolean 
 vi.mock('wagmi', () => ({ useAccount: () => ({ address: '0x1111111111111111111111111111111111111111', isConnected: true }) }));
 vi.mock('./LendingTransaction', () => ({ default: () => null }));
 vi.mock('./client', () => ({ lendingClient: {}, lendingError: String }));
-vi.mock('@tanstack/react-query', () => ({ useQuery: (options: { queryKey: unknown[]; enabled?: boolean }) => { queries.push(options); return ({
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({}), useQuery: (options: { queryKey: unknown[]; enabled?: boolean }) => { queries.push(options); return ({
   data: options.queryKey[0] === 'lending-config' ? { markets: [{ id: 'stable', name: 'Stable Pool', pool: '0x1111111111111111111111111111111111111111' }, { id: 'stock', name: 'Stock Pool', pool: '0x3333333333333333333333333333333333333333' }] } : {
     assets: [{ asset: { symbol: 'USDG', name: 'Global Dollar', iconSymbol: 'USDG', previewPath: '/markets/usdg', address: '0x2222222222222222222222222222222222222222', decimals: 6 }, wallet: 5000000n, supplied: 10000000n, debt: 2000000n, liquidity: 50000000n, price: 100000000n, supplyApy: 4, borrowApy: 6, active: true, frozen: false, paused: false, borrowing: true, collateral: true }],
     collateral: 1000000000n, debt: 200000000n, available: 500000000n, health: 4000000000000000000n, unit: 100000000n,

@@ -8,7 +8,7 @@ import type { MarketReserve } from './marketRead';
 vi.mock('wagmi', () => ({ useAccount: () => ({ isConnected: false }) }));
 vi.mock('./client', () => ({ lendingClient: {}, lendingError: String }));
 vi.mock('./LendingTransaction', () => ({ default: () => null }));
-vi.mock('@tanstack/react-query', () => ({ useQuery: () => ({ data: undefined, isPending: false, refetch: vi.fn() }) }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({}), useQuery: () => ({ data: undefined, isPending: false, refetch: vi.fn() }) }));
 const market = getLendingConfig(46630).markets[1], asset = market.assets[0];
 const reserve: MarketReserve = { asset, supplied: 300000000n, borrowed: 50000000n, liquidity: 250000000n, price: 100000000n, supplyApy: .12, borrowApy: .98, borrowCap: 350000000000n, supplyCap: 500000000000n, ltv: 80, threshold: 85, penalty: 5, reserveFactor: 10, active: true, paused: false, frozen: false, borrowing: true };
 const render = (r?: MarketReserve) => renderToStaticMarkup(<MemoryRouter><LendingReserve market={market} asset={asset} reserve={r} unit={100000000n} loading={!r} stale={false} isolated onConnect={() => {}} beforeSubmit={async () => {}} /></MemoryRouter>);

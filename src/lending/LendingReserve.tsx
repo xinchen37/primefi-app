@@ -1,7 +1,8 @@
+import { poolSnapshot } from './snapshots';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatUnits, isAddress, parseAbi, zeroAddress } from 'viem';
 import { ArrowLeft, ArrowUpRight, Check, Wallet } from 'lucide-react';
 import { Token, Note } from '../components';
@@ -14,7 +15,6 @@ import type { Action } from '../model';
 import type { LendingAsset, LendingMarket } from './config';
 import { reserveValue, type MarketReserve } from './marketRead';
 import { lendingClient, lendingError } from './client';
-import { readPool } from './read';
 import { reserveData } from './service';
 import { reserveAvailable } from './reserveAvailability';
 import { marketPath } from './marketSelection';
@@ -26,14 +26,12 @@ export default function LendingReserve({ market, asset, reserve: r, unit, loadin
   market: LendingMarket; asset: LendingAsset; reserve?: MarketReserve; unit?: bigint; loading: boolean; stale: boolean; isolated: boolean; onConnect: () => void; beforeSubmit: () => Promise<void>;
 }) {
   const { address, isConnected } = useAccount();
+  const cache = useQueryClient();
   const account = isConnected ? address : undefined;
   const [action, setAction] = useState<Action>();
   useEffect(() => setAction(undefined), [account, market.pool, asset.address]);
   const personal = useQuery({ queryKey: ['lending-pool', robinhood.id, market.pool, account, market], enabled: !!account, staleTime: 10_000, refetchInterval: 20_000, retry: 1,
-    queryFn: async () => {
-      if (await lendingClient.getChainId() !== robinhood.id) throw new Error('RPC network mismatch');
-      return readPool({ read: call => lendingClient.readContract(call) }, market, account);
-    },
+    queryFn: () => poolSnapshot(cache, market, account),
   });
   const treasury = useQuery({ queryKey: ['reserve-treasury', robinhood.id, market.pool, asset.address], staleTime: 300_000, retry: 1,
     queryFn: async () => {

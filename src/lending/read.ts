@@ -9,13 +9,16 @@ export interface AssetSnapshot {
 }
 export interface PoolSnapshot { assets: AssetSnapshot[]; collateral: bigint; debt: bigint; available: bigint; health: bigint; unit: bigint; liquidationThreshold?: bigint; eMode?: number }
 export async function readPool(io: Pick<LendingIO, 'read'>, market: LendingMarket, account?: Address): Promise<PoolSnapshot> {
-  const unit = await io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY_UNIT' }) as bigint;
-  const currency = await io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY' });
+  const [unit, currency, data, userConfig, eModeValue] = await Promise.all([
+    io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY_UNIT' }) as Promise<bigint>,
+    io.read({ address: market.oracle, abi: oracleAbi, functionName: 'BASE_CURRENCY' }),
+    account ? io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserAccountData', args: [account] }) as Promise<readonly bigint[]> : [0n, 0n, 0n, 0n, 0n, 0n],
+    account ? io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserConfiguration', args: [account] }) as Promise<{ data: bigint }> : { data: 0n },
+    account ? io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserEMode', args: [account] }) : 0,
+  ]);
   if (currency !== zeroAddress) throw new Error('This dashboard requires a USD-denominated oracle.');
   if (unit <= 0n) throw new Error('Invalid oracle base unit.');
-  const data = account ? await io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserAccountData', args: [account] }) as readonly bigint[] : [0n, 0n, 0n, 0n, 0n, 0n];
-  const userConfig = account ? await io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserConfiguration', args: [account] }) as { data: bigint } : { data: 0n };
-  const eMode = account ? Number(await io.read({ address: market.pool, abi: poolAbi, functionName: 'getUserEMode', args: [account] })) : 0;
+  const eMode = Number(eModeValue);
   const assets = await Promise.all(market.assets.map(async asset => {
     const r = await reserveData(io, market, asset);
     const balance = async (token: Address) => account ? await io.read({ address: token, abi: tokenAbi, functionName: 'balanceOf', args: [account] }) as bigint : 0n;

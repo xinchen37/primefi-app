@@ -25,7 +25,7 @@ pnpm build
 打包命令通过 `--mode dev|prod` 加载对应的 `.env.dev` / `.env.prod`，其中 `VITE_APP_ENV=dev|prod` 是业务代码的统一环境标识：
 
 - `src/environment.ts` 导出 `appEnvironment`，网络和合约配置共同使用。
-- `src/network.ts` 选择网络；`VITE_ROBINHOOD_RPC_URL` 配置当前环境 RPC，必须属于相应网络，运行时读链校验仍会检查 chainId。
+- `src/network.ts` 按环境选择 `viem/chains` 的 `robinhoodTestnet` / `robinhood`，共用内置 RPC、浏览器和 Multicall3 配置。旧 `VITE_ROBINHOOD_RPC_URL` 不再读取，即便外部设置也不会串网；运行时仍校验 RPC chainId。
 - `src/lending/local-config.ts` 的 `dev` / `prod` 分别配置对应环境的池子、预言机和币种。当前只有 dev 合约，prod 留空，绝不回退到测试合约；拿到主网部署后再补充 prod。
 - 环境标识缺失、非法或与打包 mode 不一致会阻止构建。Vitest 默认使用 dev 配置。
 - 不使用 `import.meta.env.PROD` 区分业务环境，因为两种 build 都是优化构建。
@@ -57,7 +57,7 @@ pnpm build
 
 `src/wallet.ts` 在 React 渲染外初始化 Reown AppKit + WagmiAdapter，根层挂载 WagmiProvider 和 QueryClientProvider。项目 ID 位于 `.env` 的 `VITE_REOWN_PROJECT_ID`，它是公开客户端标识，不是私钥。支持 WalletConnect QR 和浏览器钱包。电子邮箱、社交登录、兑换、入金与分析功能关闭。
 
-网络采用官方配置，集中在 `src/network.ts`：dev 使用测试链 46630、`https://rpc.testnet.chain.robinhood.com` 和 `https://explorer.testnet.chain.robinhood.com`；prod 使用主链 4663、`https://rpc.mainnet.chain.robinhood.com` 和 `https://robinhoodchain.blockscout.com`。公共 RPC 有限流，生产环境可在 `.env.prod.local` 覆盖 `VITE_ROBINHOOD_RPC_URL`。部署前在 Reown Dashboard 配置正式站点 allowed origins。参考 https://docs.robinhood.com/chain/connecting/ 。
+网络直接复用 viem 内置定义，集中在 `src/network.ts`：dev 选择测试链 46630，prod 选择主链 4663。旧通用 RPC 覆盖已移除。公共 RPC 有限流，查询使用批量与共享缓存（见 `docs/multicall.md`）。部署前在 Reown Dashboard 配置正式站点 allowed origins。
 
 `pnpm-workspace.yaml` 将 AppKit 间接依赖的 `@wagmi/core` 和 `@wagmi/connectors` 固定在兼容 Wagmi 2 的版本，避免宽泛 peer 范围自动解析到 Wagmi 3。
 

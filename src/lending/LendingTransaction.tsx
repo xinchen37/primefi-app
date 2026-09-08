@@ -36,8 +36,8 @@ export default function LendingTransaction({ market, row, pool, account, action,
         onProgress: p => { setStatus(p.message); if (p.hash) setHash(p.hash); },
       });
       setHash(tx); setDone(true); setStatus('Transaction confirmed. Your balances are refreshing.');
-      void cache.invalidateQueries({ queryKey: ['lending-pool'] });
       void cache.invalidateQueries({ queryKey: ['lending-market'] });
+      void cache.invalidateQueries({ queryKey: ['lending-pool'] });
     } catch (e) {
       if (e instanceof ReceiptPendingError) { setHash(e.hash); setUncertain(true); }
       setError(lendingError(e));

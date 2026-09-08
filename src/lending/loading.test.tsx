@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({ connected: true, pending: true, fetching: true
 vi.mock('wagmi', () => ({ useAccount: () => ({ address: '0x1111111111111111111111111111111111111111', isConnected: state.connected }) }));
 vi.mock('./LendingTransaction', () => ({ default: () => null }));
 vi.mock('./client', () => ({ lendingClient: {}, lendingError: String }));
-vi.mock('@tanstack/react-query', () => ({ useQuery: (options: { queryKey: unknown[]; initialData?: () => unknown }) => options.queryKey[0] === 'lending-config'
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({}), useQuery: (options: { queryKey: unknown[]; initialData?: () => unknown }) => options.queryKey[0] === 'lending-config'
   ? { data: options.initialData?.(), isPending: false, refetch: vi.fn() }
   : { data: state.data, error: state.error, isError: !!state.error, isPending: state.pending, isFetching: state.fetching, refetch: vi.fn() },
 }));

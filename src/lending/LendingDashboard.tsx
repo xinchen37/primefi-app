@@ -1,9 +1,10 @@
+import { poolSnapshot } from './snapshots';
 import { MarketCategoryTabs } from '../MarketNavigation';
 import { isIsolatedMarket, reservePath } from './marketSelection';
 import { formatNumber, formatBaseValue, formatAssetAmount } from '../utils/formatNumber';
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { formatUnits } from 'viem';
 import { Token, Note, Health, Toggle, DetailLink } from '../components';
@@ -13,13 +14,14 @@ import chainIcon from '../images/icon/robinhood.png';
 import { type Action } from '../model';
 import { robinhood } from '../network';
 import { getLendingConfig, loadLendingConfig } from './config';
-import { lendingClient, lendingError } from './client';
-import { readPool, availableAmount, type AssetSnapshot } from './read';
+import { lendingError } from './client';
+import { availableAmount, type AssetSnapshot } from './read';
 import LendingTransaction from './LendingTransaction';
 import { PendingPanel, Skeleton } from './LendingSkeleton';
 
 export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { onConnect: () => void; beforeSubmit: () => Promise<void>; onHelp: () => void }) {
   const { address, isConnected } = useAccount();
+  const cache = useQueryClient();
   const [params] = useSearchParams();
   const isolated = isIsolatedMarket(params);
   const selected = isolated ? 'stock' : 'stable';
@@ -30,11 +32,8 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   const account = isConnected ? address : undefined;
   useEffect(() => { setTransaction(undefined); }, [account]);
   const result = useQuery({ queryKey: ['lending-pool', robinhood.id, market?.pool, account, market],
-    queryFn: async () => {
-      if (await lendingClient.getChainId() !== robinhood.id) throw new Error('RPC network does not match the configured chain.');
-      return readPool({ read: call => lendingClient.readContract(call) }, market!, account);
-    }, enabled: !!market,
-    retry: 1, refetchInterval: 20_000,
+    queryFn: () => poolSnapshot(cache, market!, account), enabled: !!market,
+    retry: 1, staleTime: 10_000, refetchInterval: 20_000,
   });
   const data = result.data;
   const initialLoading = !data && !deployment.error && !result.error && (deployment.isPending || (!!market && result.isPending));
