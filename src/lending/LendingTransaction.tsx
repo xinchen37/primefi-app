@@ -42,7 +42,10 @@ export default function LendingTransaction({ market, row, pool, account, action,
       setError(lendingError(e));
     } finally { lock.current = false; setBusy(false); }
   }
-  return <Modal title={`${labels[action]} ${row.asset.symbol}`} description={`${market.name} · ${robinhood.name}`} onClose={() => !busy && onClose()}>
+  return <Modal title={`${labels[action]} ${row.asset.symbol}`} description={`${market.name} · ${robinhood.name}`} onClose={() => !busy && onClose()} footer={<>
+    {status && <p role="status">{status}</p>}
+    {done || uncertain ? <button className="secondary full" onClick={onClose}>Close</button> : <button className="primary full" disabled={busy || !!validation} onClick={submit}>{busy ? 'Waiting for confirmation…' : `Confirm ${action}`}</button>}
+  </>}>
     {done ? <div className="success"><h2>{labels[action]} confirmed</h2><p>{input} {row.asset.symbol}</p></div> : <>
       <div className="amount-heading"><span>Amount</span><span title={formatUnits(max, row.asset.decimals)}>Up to {formatAssetAmount(formatUnits(max, row.asset.decimals), row.asset)} {row.asset.symbol}</span></div>
       <div className="amount-box"><input aria-label="Transaction amount" inputMode="decimal" placeholder="0.00" value={input} disabled={busy || uncertain} onChange={e => setInput(e.target.value)} /><Token symbol={row.asset.iconSymbol ?? row.asset.symbol} /><strong>{row.asset.symbol}</strong><button disabled={busy || uncertain} onClick={() => setInput(formatUnits(max, row.asset.decimals))}>MAX</button></div>
@@ -50,9 +53,7 @@ export default function LendingTransaction({ market, row, pool, account, action,
       <div className="detail-row"><span>Pool</span><a className="text-button" href={`${robinhood.blockExplorers.default.url}/address/${market.pool}`} target="_blank" rel="noreferrer">{market.pool.slice(0, 8)}…{market.pool.slice(-6)}</a></div>
       {input && validation && <p className="error" role="alert">{validation}</p>}
     </>}
-    {status && <p role="status">{status}</p>}
     {error && <p role="alert" className="error">{error}</p>}
     {hash && <p><a className="text-button" href={`${robinhood.blockExplorers.default.url}/tx/${hash}`} target="_blank" rel="noreferrer">View transaction ↗</a></p>}
-    {done || uncertain ? <button className="secondary full" onClick={onClose}>Close</button> : <button className="primary full" disabled={busy || !!validation} onClick={submit}>{busy ? 'Waiting for confirmation…' : `Confirm ${action}`}</button>}
   </Modal>;
 }

@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
 import { X, ArrowUpRight, Info } from "lucide-react";
 import type { ReactNode } from "react";
+import modalStyles from './Modal.module.css';
 import { Link } from 'react-router-dom';
 import { type Asset, type Symbol } from "./model";
 import usdgIcon from './images/icon/usdg.svg';
@@ -76,23 +77,27 @@ export function Modal({
   description,
   children,
   onClose,
+  footer,
 }: {
   title: string;
   description: string;
   children: ReactNode;
   onClose: () => void;
+  footer?: ReactNode;
 }) {
   return (
     <Dialog.Root open onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content className="modal">
-          <Dialog.Title>{title}</Dialog.Title>
-          <Dialog.Description>{description}</Dialog.Description>
+        <Dialog.Content className={`modal ${footer ? modalStyles.framed : ''}`}>
+          {footer ? <header className={modalStyles.header}>
+            <Dialog.Title>{title}</Dialog.Title>
+            <Dialog.Description>{description}</Dialog.Description>
+          </header> : <><Dialog.Title>{title}</Dialog.Title><Dialog.Description>{description}</Dialog.Description></>}
           <Dialog.Close className="close" aria-label="Close">
             <X size={20} />
           </Dialog.Close>
-          {children}
+          {footer ? <><div className={modalStyles.body} tabIndex={0} role="region" aria-label={`${title} details`}>{children}</div><div className={modalStyles.footer} role="group" aria-label="Transaction actions">{footer}</div></> : children}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

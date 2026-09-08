@@ -14,5 +14,10 @@ it.each(['supply', 'withdraw', 'borrow', 'repay'] as const)('renders the %s revi
   expect(html).toContain(action === 'supply' || action === 'withdraw' ? '3.25%' : '4.50%');
   expect(html).toContain('∞');
   expect(html).not.toContain('4.30');
+  expect(html.match(/class="note"/g)).toHaveLength(1);
+  expect(html).toContain('About Network fee');
+  expect(html).not.toContain('Projections use current prices');
+  expect(html).not.toContain('The collateral outcome cannot');
+  expect(html).toContain(action === 'supply' || action === 'repay' ? 'A separate token approval may be required.' : 'A health factor below 1 may trigger liquidation.');
   if (action === 'supply') expect(html).toContain('Set by protocol');
 });
