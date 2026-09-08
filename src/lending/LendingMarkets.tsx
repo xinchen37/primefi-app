@@ -1,3 +1,4 @@
+import MissingValue from '../MissingValue';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowUpRight, Search } from 'lucide-react';
@@ -19,14 +20,14 @@ export default function LendingMarkets({ onHelp, onConnect, beforeSubmit }: { on
   const { symbol } = useParams();
   const [search, setSearch] = useState('');
   const data = result.data;
-  const usd = (value: bigint) => data ? formatBaseValue(value, data.unit, { currencySymbol: '$', compact: true, trimZeros: true }) : '—';
+  const usd = (value: bigint) => data ? formatBaseValue(value, data.unit, { currencySymbol: '$', compact: true, trimZeros: true }) : <MissingValue />;
   const quantities = (r: MarketReserve, amount: bigint) => formatNumber(formatUnits(amount, r.asset.decimals), { compact: true, decimals: r.asset.displayDecimals ?? 2, trimZeros: true });
   const assets = (market?.assets ?? []).filter(a => `${a.symbol} ${a.name ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()));
   const selected = market?.assets.find(a => a.symbol.toLowerCase() === symbol?.toLowerCase() || (symbol?.toLowerCase() === 'eth' && a.symbol === 'WETH'));
   return <>
     {!symbol && <section className="overview"><div className="market-eyebrow"><img className="chain-icon large" src={chainIcon} alt="" /><span>{robinhood.name.toUpperCase()}</span><span className="live-dot" /><span className="subtle">{isolated ? 'Isolated markets' : 'Core market'}</span></div>
       <div className="overview-heading"><h1>{isolated ? 'Isolated lending markets.' : 'Core lending market.'}</h1><button className="text-button" onClick={onHelp}>How lending works <ArrowUpRight size={16} /></button></div>
-      <div className="overview-stats">{(['supplied', 'borrowed', 'liquidity'] as const).map((key, i) => <div key={key}><span>{['Total market size', 'Total borrowed', 'Available liquidity'][i]}</span><strong>{loading ? <Skeleton large /> : data ? usd(data[key]) : '—'}</strong></div>)}</div>
+      <div className="overview-stats">{(['supplied', 'borrowed', 'liquidity'] as const).map((key, i) => <div key={key}><span>{['Total market size', 'Total borrowed', 'Available liquidity'][i]}</span><strong>{loading ? <Skeleton large /> : data ? usd(data[key]) : <MissingValue />}</strong></div>)}</div>
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>}
     <div className="content lending-dashboard">
@@ -41,7 +42,7 @@ export default function LendingMarkets({ onHelp, onConnect, beforeSubmit }: { on
             const to = reservePath(asset.symbol, isolated);
             const utilization = r && r.borrowed + r.liquidity > 0n ? formatBaseValue(r.borrowed * 10_000n / (r.borrowed + r.liquidity), 100n) : '0.00';
             return <tr key={asset.address}><td><Link to={to}><div className="asset-name"><Token symbol={asset.iconSymbol ?? asset.symbol} /><span><strong>{asset.symbol}</strong><small>{asset.name}</small>{r && (!r.active || r.paused || r.frozen) && <small>{!r.active ? 'Inactive' : r.paused ? 'Paused' : 'Frozen'}</small>}</span></div></Link></td>
-              {r ? <><td><strong>{usd(reserveValue(r, r.supplied))}</strong><small>{quantities(r, r.supplied)} {asset.symbol}</small></td><td className="apy">{formatNumber(r.supplyApy)}%</td><td><strong>{usd(reserveValue(r, r.borrowed))}</strong><small>{quantities(r, r.borrowed)} {asset.symbol}</small></td><td>{r.borrowing ? `${formatNumber(r.borrowApy)}%` : <span className="tag">Not borrowable</span>}</td><td>{utilization}%</td><td>{r.borrowCap === 0n ? 'No limit' : <><strong>{usd(reserveValue(r, r.borrowCap))}</strong><small>{quantities(r, r.borrowCap)} {asset.symbol}</small></>}</td></> : Array.from({ length: 6 }, (_, i) => <td key={i}>{loading ? <Skeleton /> : '—'}</td>)}
+              {r ? <><td><strong>{usd(reserveValue(r, r.supplied))}</strong><small>{quantities(r, r.supplied)} {asset.symbol}</small></td><td className="apy">{formatNumber(r.supplyApy)}%</td><td><strong>{usd(reserveValue(r, r.borrowed))}</strong><small>{quantities(r, r.borrowed)} {asset.symbol}</small></td><td>{r.borrowing ? `${formatNumber(r.borrowApy)}%` : <span className="tag">Not borrowable</span>}</td><td>{utilization}%</td><td>{r.borrowCap === 0n ? 'No limit' : <><strong>{usd(reserveValue(r, r.borrowCap))}</strong><small>{quantities(r, r.borrowCap)} {asset.symbol}</small></>}</td></> : Array.from({ length: 6 }, (_, i) => <td key={i}>{loading ? <Skeleton /> : <MissingValue />}</td>)}
               <td><DetailLink to={to} label={`View ${asset.symbol} details`} /></td></tr>;
           })}
         </tbody></table>{!assets.length && !error && <div className="empty">No matching assets</div>}</section>

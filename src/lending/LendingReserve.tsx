@@ -1,3 +1,4 @@
+import MissingValue from '../MissingValue';
 import { poolSnapshot } from './snapshots';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -45,12 +46,12 @@ export default function LendingReserve({ market, asset, reserve: r, unit, loadin
   const row = personal.data?.assets.find(a => a.asset.address === asset.address);
   const amount = (n: bigint) => `${formatAssetAmount(formatUnits(n, asset.decimals), asset)} ${asset.symbol}`;
   const short = (n: bigint) => formatNumber(formatUnits(n, asset.decimals), { compact: true, decimals: asset.displayDecimals ?? 2, trimZeros: true });
-  const usd = (n: bigint, compact = true) => unit ? formatBaseValue(n, unit, { currencySymbol: '$', compact }) : '—';
-  const worth = (n: bigint, compact = true) => r ? usd(reserveValue(r, n), compact) : '—';
+  const usd = (n: bigint, compact = true) => unit ? formatBaseValue(n, unit, { currencySymbol: '$', compact }) : <MissingValue />;
+  const worth = (n: bigint, compact = true) => r ? usd(reserveValue(r, n), compact) : <MissingValue />;
   const pct = (n: number) => `${formatNumber(n)}%`;
   const available = (operation: Action) => row && personal.data && r ? reserveAvailable(operation, row, personal.data, r) : 0n;
   const blocked = (operation: Action) => !row || !r || stale || personal.isError || available(operation) <= 0n;
-  const value = (n: bigint | undefined) => n === undefined ? personal.isPending ? <Skeleton /> : '—' : amount(n);
+  const value = (n: bigint | undefined) => n === undefined ? personal.isPending ? <Skeleton /> : <MissingValue /> : amount(n);
   const utilization = r && r.borrowed + r.liquidity > 0n ? formatBaseValue(r.borrowed * 10_000n / (r.borrowed + r.liquidity), 100n) + '%' : '0.00%';
   const historyKey = `${robinhood.id}:${market.pool}:${asset.address}`;
   function summary(borrow = false) {
@@ -67,20 +68,20 @@ export default function LendingReserve({ market, asset, reserve: r, unit, loadin
   return <div className="reserve-page">
     <div className="reserve-breadcrumb"><Link className="secondary" to={marketPath('/markets', isolated)}><ArrowLeft size={16} />Go back</Link><span><img src={chainIcon} width="24" height="24" alt="" />{robinhood.name} · {isolated ? 'Isolated Markets' : 'Core Market'}</span></div>
     <section className="reserve-heading" aria-label="Reserve overview"><div className="reserve-identity"><Token symbol={asset.iconSymbol ?? asset.symbol} /><div><span>{asset.symbol}</span><h1>{asset.name ?? asset.symbol}</h1></div></div>
-      <dl className="reserve-metrics">{[['Reserve size', r ? worth(r.supplied) : '—'], ['Available liquidity', r ? worth(r.liquidity) : '—'], ['Utilization rate', r ? utilization : '—'], ['Oracle price', r ? usd(r.price, false) : '—']].map(([label, text]) => <div key={label}><dt>{label}</dt><dd>{loading ? <Skeleton /> : text}</dd></div>)}</dl>
+      <dl className="reserve-metrics">{[['Reserve size', r ? worth(r.supplied) : <MissingValue />], ['Available liquidity', r ? worth(r.liquidity) : <MissingValue />], ['Utilization rate', r ? utilization : <MissingValue />], ['Oracle price', r ? usd(r.price, false) : <MissingValue />]].map(([label, text]) => <div key={String(label)}><dt>{label}</dt><dd>{loading ? <Skeleton /> : text}</dd></div>)}</dl>
     </section>
     {r && (!r.active || r.paused || r.frozen) && <Note>{!r.active ? 'This reserve is inactive.' : r.paused ? 'This reserve is paused. Transactions are unavailable.' : 'This reserve is frozen. Only withdraw and repay remain available, subject to contract checks.'}</Note>}
     <div className="reserve-layout"><article className="reserve-config panel"><h2>Reserve status &amp; configuration</h2>
       <section className="reserve-section"><h3>Supply Info</h3><div className="reserve-section-body">{summary()}
         {r && <RateChart key={historyKey + ':supply'} sourceKey={historyKey + ':supply'} label="Supply APY" rate={r.supplyApy} />}
-        <div className="collateral-title"><h4>Collateral usage</h4><span>{r ? r.ltv > 0 ? <><Check size={17} />Can be collateral</> : 'Not enabled in standard mode' : '—'}</span></div>
-        <dl className="reserve-parameters">{(['Max LTV', 'Liquidation threshold', 'Liquidation penalty'] as const).map((label, i) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{loading ? <Skeleton /> : r ? pct([r.ltv, r.threshold, r.penalty][i]) : '—'}</dd></div>)}</dl>
+        <div className="collateral-title"><h4>Collateral usage</h4><span>{r ? r.ltv > 0 ? <><Check size={17} />Can be collateral</> : 'Not enabled in standard mode' : <MissingValue />}</span></div>
+        <dl className="reserve-parameters">{(['Max LTV', 'Liquidation threshold', 'Liquidation penalty'] as const).map((label, i) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{loading ? <Skeleton /> : r ? pct([r.ltv, r.threshold, r.penalty][i]) : <MissingValue />}</dd></div>)}</dl>
       </div></section>
       <section className="reserve-section"><h3>Borrow info</h3><div className="reserve-section-body">{summary(true)}
         {r && !r.borrowing && <Note>New borrowing is disabled for this asset. Existing debt can still be repaid when the reserve is not paused.</Note>}
         {r && <RateChart key={historyKey + ':borrow'} sourceKey={historyKey + ':borrow'} label="Borrow APY, variable" rate={r.borrowApy} borrow />}
         <section className="collector-info" aria-label="Collector Info"><h4>Collector Info</h4><dl className="reserve-parameters">
-          <div><dt>Reserve factor <InfoTip label="Reserve factor" /></dt><dd>{loading ? <Skeleton /> : r ? pct(r.reserveFactor) : '—'}</dd></div>
+          <div><dt>Reserve factor <InfoTip label="Reserve factor" /></dt><dd>{loading ? <Skeleton /> : r ? pct(r.reserveFactor) : <MissingValue />}</dd></div>
           <div><dt>Collector Contract</dt><dd>{treasury.data ? <a className="collector-contract" href={`${robinhood.blockExplorers.default.url}/address/${treasury.data}`} target="_blank" rel="noreferrer">View contract <ArrowUpRight size={16} /></a> : treasury.isPending ? <Skeleton /> : <button className="collector-contract" onClick={() => void treasury.refetch()}>Unavailable · Retry</button>}</dd></div>
         </dl></section>
       </div></section>
@@ -88,9 +89,9 @@ export default function LendingReserve({ market, asset, reserve: r, unit, loadin
     <aside className="reserve-account panel"><h2>Your info</h2>
       {!account ? <div className="reserve-connect"><Wallet size={30} /><p>Connect your wallet to view your balance and manage your position.</p><button className="primary" onClick={onConnect}>Connect wallet</button></div> : <>
         {personal.error && <p role="alert" className="error">{lendingError(personal.error)} <button onClick={() => void personal.refetch()}>Retry</button></p>}
-        <div className="reserve-wallet"><Wallet size={24} /><div><span>Wallet balance</span><strong>{value(row?.wallet)}</strong><small>{row ? worth(row.wallet, false) : '—'}</small></div></div>
-        {(['supply', 'borrow'] as const).map(operation => <div className="reserve-account-action" key={operation}><div><span>Available to {operation}</span><strong>{row && r ? amount(available(operation)) : value(undefined)}</strong><small>{row && r ? worth(available(operation), false) : '—'}</small></div><button className={operation === 'supply' ? 'primary' : 'secondary'} disabled={blocked(operation)} onClick={() => setAction(operation)}>{operation === 'supply' ? 'Supply' : 'Borrow'}</button></div>)}
-        <div className="reserve-position"><h3>Your position</h3><div><span>Supplied</span><strong>{value(row?.supplied)}</strong></div><div><span>Borrowed</span><strong>{value(row?.debt)}</strong></div><div><span>Collateral</span><strong>{row ? row.collateral ? 'Enabled' : 'Not enabled' : '—'}</strong></div><div><span>Health factor</span><strong>{personal.data ? personal.data.debt === 0n ? '∞' : formatBaseValue(personal.data.health, 10n ** 18n) : '—'}</strong></div>
+        <div className="reserve-wallet"><Wallet size={24} /><div><span>Wallet balance</span><strong>{value(row?.wallet)}</strong><small>{row ? worth(row.wallet, false) : <MissingValue />}</small></div></div>
+        {(['supply', 'borrow'] as const).map(operation => <div className="reserve-account-action" key={operation}><div><span>Available to {operation}</span><strong>{row && r ? amount(available(operation)) : value(undefined)}</strong><small>{row && r ? worth(available(operation), false) : <MissingValue />}</small></div><button className={operation === 'supply' ? 'primary' : 'secondary'} disabled={blocked(operation)} onClick={() => setAction(operation)}>{operation === 'supply' ? 'Supply' : 'Borrow'}</button></div>)}
+        <div className="reserve-position"><h3>Your position</h3><div><span>Supplied</span><strong>{value(row?.supplied)}</strong></div><div><span>Borrowed</span><strong>{value(row?.debt)}</strong></div><div><span>Collateral</span><strong>{row ? row.collateral ? 'Enabled' : 'Not enabled' : <MissingValue />}</strong></div><div><span>Health factor</span><strong>{personal.data ? personal.data.debt === 0n ? '∞' : formatBaseValue(personal.data.health, 10n ** 18n) : <MissingValue />}</strong></div>
           <div className="reserve-position-actions">{(['withdraw', 'repay'] as const).map(operation => <button key={operation} className="secondary" disabled={blocked(operation)} onClick={() => setAction(operation)}>{operation === 'withdraw' ? 'Withdraw' : 'Repay'}</button>)}</div>
         </div>
       </>}

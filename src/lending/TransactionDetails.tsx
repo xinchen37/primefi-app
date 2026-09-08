@@ -1,3 +1,4 @@
+import MissingValue from '../MissingValue';
 import { formatNumber, formatBaseValue } from '../utils/formatNumber';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -30,15 +31,15 @@ export default function TransactionDetails({ action, amount, row, pool, market, 
     },
   });
   const preview = amount === undefined ? undefined : previewPosition(action, amount, row, pool);
-  const health = (value: bigint | null | undefined) => value === undefined ? '—' : value === null ? '∞' : <Health value={Number(formatUnits(value, 18))} />;
+  const health = (value: bigint | null | undefined) => value === undefined ? <MissingValue /> : value === null ? '∞' : <Health value={Number(formatUnits(value, 18))} />;
   const supply = action === 'supply' || action === 'withdraw';
   return <>
     <div className="transaction-details">
       {action === 'supply' && <div className="detail-row"><span>Use as collateral</span><strong>{row.collateral ? 'Enabled' : row.ltv === 0 ? 'Not eligible' : 'Set by protocol'}</strong></div>}
       <div className="detail-row"><span>{supply ? 'Supply APY' : 'Variable borrow APY'}</span><strong>{formatNumber((supply ? row.supplyApy : row.borrowApy), { decimals: 2 })}%</strong></div>
       <div className="detail-row"><span>Health factor (estimated)</span><strong>{health(pool.debt === 0n ? null : pool.health)} <span aria-hidden="true"> → </span> {health(preview?.health)}</strong></div>
-      <div className="detail-row"><span>Total debt after transaction (estimated)</span><strong>{preview ? formatBaseValue(preview.debt, pool.unit, { currencySymbol: '$' }) : '—'}</strong></div>
-      <div className="detail-row"><span className="inline">Network fee (estimated) <InfoTip label="Network fee" /></span><strong>{!amount ? '—' : debounced !== amount || fee.isLoading ? <Skeleton /> : fee.data !== undefined ? `≈ ${formatNumber(formatEther(fee.data), { decimals: 18, trimZeros: true })} ETH` : 'Unavailable'}</strong></div>
+      <div className="detail-row"><span>Total debt after transaction (estimated)</span><strong>{preview ? formatBaseValue(preview.debt, pool.unit, { currencySymbol: '$' }) : <MissingValue />}</strong></div>
+      <div className="detail-row"><span className="inline">Network fee (estimated) <InfoTip label="Network fee" /></span><strong>{!amount ? <MissingValue /> : debounced !== amount || fee.isLoading ? <Skeleton /> : fee.data !== undefined ? `≈ ${formatNumber(formatEther(fee.data), { decimals: 18, trimZeros: true })} ETH` : 'Unavailable'}</strong></div>
     </div>
     {fee.isError && !!amount && debounced === amount && <p className="subtle" role="status">Fee estimation unavailable. Token approval or a valid position may be required.</p>}
     {!!amount && preview?.health === undefined && <p className="subtle" role="status">The collateral outcome cannot be reliably estimated for this configuration.</p>}

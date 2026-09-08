@@ -31,6 +31,8 @@ it('shows wallet guidance instead of loading personal balances while disconnecte
   state.connected = false;
   const html = render();
   expect(html).toContain('Connect your wallet to view your positions.');
+  expect(html).toContain('aria-label="No data"');
+  expect(html).not.toContain('<strong>—</strong>');
   expect(html).not.toContain('Loading your positions');
   expect(html.match(/aria-busy="true"/g)).toHaveLength(2);
 });
