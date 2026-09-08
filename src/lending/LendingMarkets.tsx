@@ -11,7 +11,7 @@ import { Skeleton } from './LendingSkeleton';
 import { useMarket } from './useMarket';
 import { reserveValue, type MarketReserve } from './marketRead';
 import { lendingError } from './client';
-import { marketPath, reservePath } from './marketSelection';
+import { reservePath } from './marketSelection';
 import LendingReserve from './LendingReserve';
 
 export default function LendingMarkets({ onHelp, onConnect, beforeSubmit }: { onHelp: () => void; onConnect: () => void; beforeSubmit: () => Promise<void> }) {
@@ -30,7 +30,7 @@ export default function LendingMarkets({ onHelp, onConnect, beforeSubmit }: { on
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>}
     <div className="content lending-dashboard">
-      {symbol ? <Link className="secondary" to={marketPath('/markets', isolated)}>← Go back</Link> : <MarketCategoryTabs isolated={isolated} />}
+      {!symbol && <MarketCategoryTabs isolated={isolated} />}
       {error && <div className="lending-notice error" role="alert">{lendingError(error)} <button className="secondary" onClick={retry}>Retry</button></div>}
       {result.isPaused && <p role="status">Connection unavailable. Updates will resume when you are online.</p>}
       {symbol ? selected && market ? <LendingReserve market={market} asset={selected} reserve={data?.reserves.find(r => r.asset.address === selected.address)} unit={data?.unit} loading={loading} stale={!!error} isolated={isolated} onConnect={onConnect} beforeSubmit={beforeSubmit} /> : !loading && <div className="empty">Asset is not configured in this pool.</div> : <>
