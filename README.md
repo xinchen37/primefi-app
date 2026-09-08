@@ -22,7 +22,15 @@ pnpm build
 | `pnpm preview:dev` | Serve the latest build | `dist` |
 | `pnpm preview:prod` / `pnpm preview` | Serve the latest build | `dist` |
 
-The build selects its network using Vite `MODE`, not `PROD` (both build modes are optimized production bundles). `.env` holds the shared Reown project ID. `.env.dev` and `.env.prod` hold network-specific RPC URLs. Override these in `.env.dev.local` and `.env.prod.local` as needed, then restart or rebuild. Both environments output to `dist`; each build replaces the previous output. Preview serves the latest existing bundle and cannot change its embedded network. Deploy `dist` with an SPA fallback to its `index.html`.
+打包命令通过 `--mode dev|prod` 加载对应的 `.env.dev` / `.env.prod`，其中 `VITE_APP_ENV=dev|prod` 是业务代码的统一环境标识：
+
+- `src/environment.ts` 导出 `appEnvironment`，网络和合约配置共同使用。
+- `src/network.ts` 选择网络；`VITE_ROBINHOOD_RPC_URL` 配置当前环境 RPC，必须属于相应网络，运行时读链校验仍会检查 chainId。
+- `src/lending/local-config.ts` 的 `dev` / `prod` 分别配置对应环境的池子、预言机和币种。当前只有 dev 合约，prod 留空，绝不回退到测试合约；拿到主网部署后再补充 prod。
+- 环境标识缺失、非法或与打包 mode 不一致会阻止构建。Vitest 默认使用 dev 配置。
+- 不使用 `import.meta.env.PROD` 区分业务环境，因为两种 build 都是优化构建。
+
+可用 `.env.dev.local` / `.env.prod.local` 覆盖同环境配置，修改后重启或重新打包。两种构建均输出 `dist`，后一次会覆盖前一次；preview 仅提供现有产物，不能切换已打包的网络或合约环境。部署需配置 SPA fallback 到 `index.html`。所有 `VITE_*` 变量均为前端公开数据，不得放私钥或服务端密钥。
 
 默认未连接钱包。点击 Connect wallet 连接真实钱包；连接后地址按钮打开 AppKit 账户面板，可复制地址和断开连接。切换账户及重新连接由 Wagmi/AppKit 管理。网络不匹配时显示 Switch to Robinhood，失败或拒绝会提示。无需真实钱包也可通过 Reset demo 恢复示例仓位或从零开始；该操作只启用独立借贷演示，不伪造钱包连接状态。借贷仓位保存在 localStorage，始终是浏览器共享的模拟数据，不代表任何真实地址的持仓。
 

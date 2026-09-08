@@ -1,4 +1,5 @@
 import type { LendingAsset, LendingConfig } from './config';
+import type { AppEnvironment } from '../environment';
 
 // Public deployment configuration only. Never put private keys here.
 // Define each token once per chain, then reuse it across pools.
@@ -12,12 +13,14 @@ const tokens = {
 
 // Addresses from deployment (1).json. No mainnet deployment is configured.
 // Labels do not enable protocol isolation; risk parameters are read on-chain.
-export const localLendingConfigs: Partial<Record<number, LendingConfig>> = {
-  46630: {
+export const localLendingConfigs: Record<AppEnvironment, LendingConfig | undefined> = {
+  dev: {
     chainId: 46630,
     markets: [
       { id: 'stable', name: 'Stable Pool', pool: '0xE304A23Dc38a936086659598E935A8deDf2cc10C', oracle: '0x1EA69040EB15ED7B72536e80969e576D904Fb39D', assets: [tokens.USDG, tokens.WETH] },
       { id: 'stock', name: 'Stock Pool', pool: '0xE00b15153852F571585D91321EcC427266A1fa09', oracle: '0xB4D0f588B48D1eB8899345CE0E1110d8689894a1', assets: [tokens.USDG, tokens.NVDA] },
     ],
   },
+  // Populate only with verified mainnet pool, oracle and token addresses.
+  prod: undefined,
 };

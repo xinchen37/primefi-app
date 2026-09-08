@@ -1,4 +1,5 @@
 import { defineChain } from 'viem';
+import { appEnvironment, environmentChainIds } from './environment';
 
 export function getRobinhoodChain(mode: string, rpcOverride?: string) {
   const testnet = ['dev', 'development', 'test'].includes(mode);
@@ -6,7 +7,7 @@ export function getRobinhoodChain(mode: string, rpcOverride?: string) {
     throw new Error(`Unsupported build mode: ${mode}. Use dev or prod.`);
   }
   return defineChain({
-    id: testnet ? 46630 : 4663,
+    id: environmentChainIds[testnet ? 'dev' : 'prod'],
     name: testnet ? 'Robinhood Chain Testnet' : 'Robinhood Chain',
     testnet,
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -19,4 +20,4 @@ export function getRobinhoodChain(mode: string, rpcOverride?: string) {
   });
 }
 
-export const robinhood = getRobinhoodChain(import.meta.env.MODE, import.meta.env.VITE_ROBINHOOD_RPC_URL);
+export const robinhood = getRobinhoodChain(appEnvironment, import.meta.env.VITE_ROBINHOOD_RPC_URL);

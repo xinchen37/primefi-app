@@ -1,5 +1,6 @@
 import { getAddress, isAddress, zeroAddress, type Address } from 'viem';
 import { localLendingConfigs } from './local-config';
+import { appEnvironment, environmentChainIds, type AppEnvironment } from '../environment';
 import { DEFAULT_ASSET_DISPLAY_DECIMALS, type AssetDisplayConfig } from '../utils/formatNumber';
 
 export interface LendingAsset extends AssetDisplayConfig { symbol: string; address: Address; decimals: number; name?: string; iconSymbol?: string; previewPath?: string }
@@ -46,6 +47,7 @@ export async function loadLendingConfig(chainId: number) {
   return getLendingConfig(chainId);
 }
 
-export function getLendingConfig(chainId: number) {
-  return validateConfig(localLendingConfigs[chainId], chainId);
+export function getLendingConfig(chainId: number, environment: AppEnvironment = appEnvironment) {
+  if (chainId !== environmentChainIds[environment]) throw new Error('No lending deployment is configured for this network in the current environment.');
+  return validateConfig(localLendingConfigs[environment], chainId);
 }
