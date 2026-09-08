@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Check, Wallet } from 'lucide-react';
 import { assets, compact, money, number, reserve, maximum, totals, type Asset, type Action, type Portfolio } from './model';
@@ -11,12 +12,12 @@ function CapSummary({ amount, cap, asset, borrow = false }: { amount: number; ca
   const limited = borrow && Number.isFinite(cap);
   const percent = limited ? amount / cap * 100 : 0;
   return <div className="reserve-cap-summary">
-    {limited && <div className="cap-ring" role="img" aria-label={`${percent.toFixed(2)}% of borrow cap used`}>
+    {limited && <div className="cap-ring" role="img" aria-label={`${formatNumber(percent, { decimals: 2 })}% of borrow cap used`}>
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" className="ring-track" /><circle cx="50" cy="50" r="43" className="ring-fill" pathLength="100" strokeDasharray={`${Math.min(100, Math.max(0, percent))} 100`} /></svg>
-      <strong>{percent.toFixed(2)}%</strong>
+      <strong>{formatNumber(percent, { decimals: 2 })}%</strong>
     </div>}
     <div><span>Total {borrow ? 'borrowed' : 'supplied'} <InfoTip label={borrow ? 'Total borrowed' : 'Total supplied'} /></span><strong>{compact(amount)} {limited && <><em>of</em> {compact(cap)} </>}<small>{asset.symbol}</small></strong><small title={money(amount * asset.price)}>${compact(amount * asset.price)}{limited && <> of ${compact(cap * asset.price)}</>}</small></div>
-    <div className="reserve-stat-divider"><span>{borrow ? 'APY, variable' : 'Supply APY'} {borrow && <InfoTip label="APY, variable" />}</span><strong className={borrow ? '' : 'apy'}>{(borrow ? asset.borrowApy : asset.supplyApy).toFixed(2)}%</strong></div>
+    <div className="reserve-stat-divider"><span>{borrow ? 'APY, variable' : 'Supply APY'} {borrow && <InfoTip label="APY, variable" />}</span><strong className={borrow ? '' : 'apy'}>{formatNumber((borrow ? asset.borrowApy : asset.supplyApy), { decimals: 2 })}%</strong></div>
     {borrow && <div className="reserve-stat-divider"><span>Borrow cap</span><strong>{limited ? `$${compact(cap * asset.price)}` : 'No limit'}</strong>{limited && <small>{compact(cap)} {asset.symbol}</small>}</div>}
   </div>;
 }
@@ -50,19 +51,19 @@ export default function ReserveOverview(props: Props) {
   return <div className="reserve-page">
     <div className="reserve-breadcrumb"><Link className="secondary" to="/markets"><ArrowLeft size={16} />Go back</Link><span><img src={robinhoodIcon} width="24" height="24" alt="" />{robinhood.name} · Core Market</span></div>
     <section className="reserve-heading" aria-label="Reserve overview"><div className="reserve-identity"><Token symbol={asset.symbol} /><div><span>{asset.symbol}</span><h1>{asset.name}</h1></div></div><dl className="reserve-metrics">
-      {[['Reserve size', `$${compact(r.total * asset.price)}`], ['Available liquidity', `$${compact(Math.max(0, r.total - r.borrowed) * asset.price)}`], ['Utilization rate', `${(r.total ? r.borrowed / r.total * 100 : 0).toFixed(2)}%`], ['Oracle price', money(asset.price)]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+      {[['Reserve size', `$${compact(r.total * asset.price)}`], ['Available liquidity', `$${compact(Math.max(0, r.total - r.borrowed) * asset.price)}`], ['Utilization rate', `${formatNumber((r.total ? r.borrowed / r.total * 100 : 0), { decimals: 2 })}%`], ['Oracle price', money(asset.price)]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl></section>
     <div className="reserve-layout"><article className="reserve-config panel"><h2>Reserve status & configuration</h2>
       <section className="reserve-section"><h3>Supply Info</h3><div className="reserve-section-body"><CapSummary amount={r.total} cap={asset.supplyCap} asset={asset} /><RateChart key={`${asset.symbol}-supply`} label="Supply APY" rate={asset.supplyApy} />
         <div className="collateral-title"><h4>Collateral usage</h4><span><Check size={17} />Can be collateral</span></div>
-        <dl className="reserve-parameters">{([['Max LTV', `${(asset.ltv * 100).toFixed(2)}%`], ['Liquidation threshold', `${(asset.threshold * 100).toFixed(2)}%`], ['Liquidation penalty', `${asset.penalty.toFixed(2)}%`]] as const).map(([label, value]) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{value}</dd></div>)}</dl>
+        <dl className="reserve-parameters">{([['Max LTV', `${formatNumber((asset.ltv * 100), { decimals: 2 })}%`], ['Liquidation threshold', `${formatNumber((asset.threshold * 100), { decimals: 2 })}%`], ['Liquidation penalty', `${formatNumber(asset.penalty, { decimals: 2 })}%`]] as const).map(([label, value]) => <div key={label}><dt>{label} <InfoTip label={label} /></dt><dd>{value}</dd></div>)}</dl>
         {(asset.symbol === 'NVDA' || asset.symbol === 'SPY') && <Note>Tokenized securities track the underlying price but are not shares of the underlying stock or ETF. Issuer restrictions and price gaps can affect collateral and debt.</Note>}
       </div></section>
       <section className="reserve-section"><h3>Borrow info</h3><div className="reserve-section-body">{asset.borrowCap > 0 ? <><CapSummary amount={r.borrowed} cap={asset.borrowCap} asset={asset} borrow /><RateChart key={`${asset.symbol}-borrow`} label="Borrow APY, variable" rate={asset.borrowApy} borrow />
         <section className="collector-info" aria-label="Collector Info">
           <h4>Collector Info</h4>
           <dl className="reserve-parameters">
-            <div><dt>Reserve factor <InfoTip label="Reserve factor" /></dt><dd>{asset.reserveFactor.toFixed(2)}%</dd></div>
+            <div><dt>Reserve factor <InfoTip label="Reserve factor" /></dt><dd>{formatNumber(asset.reserveFactor, { decimals: 2 })}%</dd></div>
             <div><dt>Collector Contract</dt><dd><button className="collector-contract" disabled title="Contract address is not available yet." aria-label="View contract, address not available">View contract <ArrowUpRight size={16} /></button></dd></div>
           </dl>
         </section>

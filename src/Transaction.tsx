@@ -53,7 +53,7 @@ export default function Transaction({
       await beforeSubmit();
       onComplete(
         next,
-        `${labels[action]} successful: ${number(amount)} ${asset.symbol}`,
+        `${labels[action]} successful: ${number(amount, asset)} ${asset.symbol}`,
       );
       setStage("success");
     } catch (error) {
@@ -74,7 +74,7 @@ export default function Transaction({
           </span>
           <h2>{labels[action]} successful</h2>
           <p>
-            {number(amount)} {asset.symbol}
+            {number(amount, asset)} {asset.symbol}
           </p>
           <p>Your position has been updated.</p>
           <button className="primary full" onClick={onClose}>
@@ -86,7 +86,7 @@ export default function Transaction({
           <div className="amount-heading">
             <span>Amount</span>
             <span>
-              Available: {number(max)} {asset.symbol}
+              Available: {number(max, asset)} {asset.symbol}
             </span>
           </div>
           <div className="amount-box">

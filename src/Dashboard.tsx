@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import { ArrowDownLeft, ArrowUpRight, ShieldCheck, Wallet } from "lucide-react";
 import { AssetName, Toggle, Health, DetailLink } from "./components";
 import {
@@ -54,13 +55,13 @@ export default function Dashboard({
               <small>Weighted supply APY</small>
               <strong>
                 {t.supplied
-                  ? (
+                  ? formatNumber((
                       assets.reduce(
                         (s, a) =>
                           s + p[a.symbol].supplied * a.price * a.supplyApy,
                         0,
                       ) / t.supplied
-                    ).toFixed(2)
+                    ), { decimals: 2 })
                   : "0.00"}
                 <em>%</em>
               </strong>
@@ -86,8 +87,8 @@ export default function Dashboard({
                           <AssetName asset={a} />
                         </td>
                         <td>
-                          <strong>{number(p[a.symbol].supplied)}</strong>
-                          <small>{a.supplyApy.toFixed(2)}%</small>
+                          <strong>{number(p[a.symbol].supplied, a)}</strong>
+                          <small>{formatNumber(a.supplyApy, { decimals: 2 })}%</small>
                         </td>
                         <td>
                           <Toggle
@@ -174,10 +175,10 @@ export default function Dashboard({
                             <AssetName asset={a} />
                           </td>
                           <td>
-                            <strong>{number(p[a.symbol].debt)}</strong>
+                            <strong>{number(p[a.symbol].debt, a)}</strong>
                             <small>{money(p[a.symbol].debt * a.price)}</small>
                           </td>
-                          <td>{a.borrowApy.toFixed(2)}%</td>
+                          <td>{formatNumber(a.borrowApy, { decimals: 2 })}%</td>
                           <td>
                             <button
                               className="secondary"
@@ -194,7 +195,7 @@ export default function Dashboard({
               <div className="panel-bottom">
                 <span>Borrow power used</span>
                 <strong>
-                  {t.limit ? ((t.debt / t.limit) * 100).toFixed(2) : 0}%
+                  {t.limit ? formatNumber(((t.debt / t.limit) * 100), { decimals: 2 }) : 0}%
                 </strong>
                 <div className="progress">
                   <i
@@ -240,7 +241,7 @@ export default function Dashboard({
                       </td>
                       <td>
                         <strong>
-                          {connected ? number(p[a.symbol].wallet) : "—"}
+                          {connected ? number(p[a.symbol].wallet, a) : "—"}
                         </strong>
                         <small>
                           {connected
@@ -250,7 +251,7 @@ export default function Dashboard({
                       </td>
                       <td>
                         <span className="apy">
-                          {a.supplyApy.toFixed(2)}
+                          {formatNumber(a.supplyApy, { decimals: 2 })}
                           <small>%</small>
                         </span>
                       </td>
@@ -301,7 +302,7 @@ export default function Dashboard({
                       </td>
                       <td>
                         <strong>
-                          {number(connected ? maximum("borrow", a, p) : 0)}
+                          {number(connected ? maximum("borrow", a, p) : 0, a)}
                         </strong>
                         <small>
                           {money(
@@ -311,7 +312,7 @@ export default function Dashboard({
                       </td>
                       <td>
                         <span className="apy">
-                          {a.borrowApy.toFixed(2)}
+                          {formatNumber(a.borrowApy, { decimals: 2 })}
                           <small>%</small>
                         </span>
                       </td>

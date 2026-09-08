@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import { useRef, useState } from 'react';
 import { Modal, Health, Note } from './components';
 import { money, number, type Action } from './model';
@@ -30,7 +31,7 @@ export default function IsolatedTransaction({ market, position, usdgWallet, acti
     {stage === 'success' ? <div className="empty"><h3>{title} complete</h3><p>{number(amount)} {token}</p><button className="primary" onClick={onClose}>Done</button></div> : <>
       <label className="isolated-amount">Amount<input type="number" min="0" step="any" inputMode="decimal" value={input} placeholder="0.00" disabled={stage === 'pending'} onChange={e => setInput(e.target.value)} /></label>
       <div className="detail-row"><span>Available: {number(max)} {token}</span><button className="text-button" disabled={stage === 'pending'} onClick={() => setInput(String(max))}>MAX</button></div>
-      <div className="transaction-details"><div className="detail-row"><span>Health factor</span><strong><Health value={isolatedTotals(market, position).hf} /> → <Health value={isolatedTotals(market, next).hf} /></strong></div><div className="detail-row"><span>Debt after transaction</span><strong>{money(next.debt)} USDG</strong></div><div className="detail-row"><span>Borrow APY, variable</span><strong>{market.borrowApy.toFixed(2)}%</strong></div></div>
+      <div className="transaction-details"><div className="detail-row"><span>Health factor</span><strong><Health value={isolatedTotals(market, position).hf} /> → <Health value={isolatedTotals(market, next).hf} /></strong></div><div className="detail-row"><span>Debt after transaction</span><strong>{money(next.debt)} USDG</strong></div><div className="detail-row"><span>Borrow APY, variable</span><strong>{formatNumber(market.borrowApy, { decimals: 2 })}%</strong></div></div>
       <Note>Only {market.symbol} backs this position. Core market collateral and other isolated positions cannot support this debt. A health factor below 1 may trigger liquidation.</Note>
       {input && error && <p className="error" role="alert">{error}</p>}{failure && <p className="error" role="alert">{failure}</p>}
       <button className="primary full" disabled={!!error || stage === 'pending'} onClick={submit}>{stage === 'pending' ? 'Confirm in wallet…' : `Confirm ${action}`}</button>

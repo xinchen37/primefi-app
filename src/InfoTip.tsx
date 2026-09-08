@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 
 export const explanations = {
+  'Network fee': 'The estimate covers this operation only, excluding token approvals and any additional L1 fee. Your wallet shows the final fee.',
   'Net APY': 'Net APY combines the estimated annual interest earned on supplied assets and paid on borrowed assets, relative to your net worth. It can be negative when borrowing costs exceed supply earnings.',
   'Max LTV': 'Maximum loan-to-value (LTV) determines how much you can borrow against an asset. For example, a 75% LTV allows up to $75 of borrowing for every $100 of eligible collateral. Your total borrowing power depends on all enabled collateral.',
   'Liquidation threshold': 'This percentage determines how much an asset contributes to the collateral value used in your health factor. If your total debt exceeds your collateral value weighted by liquidation thresholds, your health factor falls below 1 and your position may be liquidated.',

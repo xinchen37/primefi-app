@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -206,7 +207,7 @@ export default function App() {
                       <InfoTip label="Net APY" />
                     </span>
                     <strong>
-                      {t.netApy.toFixed(2)}
+                      {formatNumber(t.netApy, { decimals: 2 })}
                       <em>%</em>
                       <span className="stat-tag">Variable yield</span>
                     </strong>

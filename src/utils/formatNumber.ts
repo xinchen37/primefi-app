@@ -1,6 +1,11 @@
 import Decimal from 'decimal.js';
 
 export type NumericInput = number | string | bigint | Decimal;
+export const DEFAULT_ASSET_DISPLAY_DECIMALS = 2;
+export interface AssetDisplayConfig { displayDecimals?: number }
+export function formatAssetAmount(value: NumericInput, asset: AssetDisplayConfig = {}): string {
+  return formatNumber(value, { decimals: asset.displayDecimals ?? DEFAULT_ASSET_DISPLAY_DECIMALS });
+}
 
 export interface FormatNumberOptions {
   /** Fraction digits, 0–100. Defaults to 2. Values are floored, never rounded. */
@@ -21,6 +26,12 @@ const UNITS = ['', 'K', 'M', 'B', 'T', 'Q'] as const;
 // Isolate arithmetic from global Decimal.set calls. Precision covers the
 // bounded 10,000-character inputs, including compact scaling without rounding.
 const DisplayDecimal = Decimal.clone({ precision: 10_020, rounding: Decimal.ROUND_FLOOR, minE: -1_000_000, maxE: 1_000_000 });
+
+/** Format a chain base-unit value without first converting it to Number. */
+export function formatBaseValue(value: bigint, unit: bigint, options: FormatNumberOptions = {}): string {
+  if (unit <= 0n) return options.fallback ?? '—';
+  return formatNumber(new DisplayDecimal(value.toString()).dividedBy(unit.toString()), options);
+}
 
 // Parse decimal/scientific notation without converting precise strings to Number.
 function parse(value: NumericInput | null | undefined) {

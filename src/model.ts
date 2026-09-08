@@ -1,6 +1,7 @@
+import { formatNumber, formatAssetAmount, type AssetDisplayConfig, type NumericInput } from './utils/formatNumber';
 export type Symbol = "USDG" | "ETH" | "NVDA" | "SPY";
 export type Action = "supply" | "withdraw" | "borrow" | "repay";
-export interface Asset {
+export interface Asset extends AssetDisplayConfig {
   symbol: Symbol;
   name: string;
   price: number;
@@ -86,19 +87,9 @@ export const empty: Portfolio = {
   NVDA: { wallet: 30, supplied: 0, debt: 0, collateral: true },
   SPY: { wallet: 8, supplied: 0, debt: 0, collateral: true },
 };
-export const money = (n: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(n);
-export const number = (n: number) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(n);
-export const compact = (n: number) =>
-  new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 2,
-  }).format(n);
+export const money = (n: NumericInput) => formatNumber(n, { currencySymbol: '$' });
+export const number = (n: NumericInput, asset: AssetDisplayConfig = {}) => formatAssetAmount(n, asset);
+export const compact = (n: NumericInput) => formatNumber(n, { compact: true, trimZeros: true });
 export function totals(p: Portfolio) {
   let supplied = 0,
     debt = 0,

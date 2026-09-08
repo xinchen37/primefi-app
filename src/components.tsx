@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Switch from "@radix-ui/react-switch";
 import { X, ArrowUpRight, Info } from "lucide-react";
@@ -100,7 +101,7 @@ export function Modal({
 export function Health({ value }: { value: number }) {
   return (
     <span className={value < 1.5 ? "danger" : "healthy"}>
-      {Number.isFinite(value) ? value.toFixed(2) : "∞"}
+      {Number.isFinite(value) ? formatNumber(value, { decimals: 2 }) : "∞"}
     </span>
   );
 }

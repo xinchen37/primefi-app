@@ -1,7 +1,8 @@
 import { getAddress, isAddress, zeroAddress, type Address } from 'viem';
 import { localLendingConfigs } from './local-config';
+import { DEFAULT_ASSET_DISPLAY_DECIMALS, type AssetDisplayConfig } from '../utils/formatNumber';
 
-export interface LendingAsset { symbol: string; address: Address; decimals: number; name?: string; iconSymbol?: string; previewPath?: string }
+export interface LendingAsset extends AssetDisplayConfig { symbol: string; address: Address; decimals: number; name?: string; iconSymbol?: string; previewPath?: string }
 export interface LendingMarket { id: string; name: string; pool: Address; oracle: Address; assets: LendingAsset[] }
 export interface LendingConfig { chainId: number; markets: LendingMarket[] }
 
@@ -26,6 +27,8 @@ export function validateConfig(value: unknown, chainId: number): LendingConfig {
     return { id: m.id, name: m.name, pool, oracle: address(m.oracle), assets: m.assets.map(a => {
       if (!a || typeof a.symbol !== 'string' || !a.symbol.trim()) throw new Error('Invalid asset configuration.');
       const token = address(a.address);
+      const displayDecimals = a.displayDecimals ?? DEFAULT_ASSET_DISPLAY_DECIMALS;
+      if (!Number.isInteger(displayDecimals) || displayDecimals < 0 || displayDecimals > 100) throw new Error('Invalid asset display decimals.');
       if (!Number.isInteger(a.decimals) || a.decimals < 0 || a.decimals > 36 || tokens.has(token) || symbols.has(a.symbol)) throw new Error('Invalid asset configuration.');
       for (const field of [a.name, a.iconSymbol]) if (field !== undefined && (typeof field !== 'string' || !field.trim())) throw new Error('Invalid asset display configuration.');
       if (a.previewPath !== undefined && (typeof a.previewPath !== 'string' || !/^\/markets\/[a-z0-9/-]+$/.test(a.previewPath))) throw new Error('Invalid market preview path.');
@@ -34,7 +37,7 @@ export function validateConfig(value: unknown, chainId: number): LendingConfig {
       sharedTokens.set(token, a);
       tokens.add(token);
       symbols.add(a.symbol);
-      return { symbol: a.symbol, address: token, decimals: a.decimals, name: a.name, iconSymbol: a.iconSymbol, previewPath: a.previewPath };
+      return { symbol: a.symbol, address: token, decimals: a.decimals, displayDecimals, name: a.name, iconSymbol: a.iconSymbol, previewPath: a.previewPath };
     }) };
   }) };
 }

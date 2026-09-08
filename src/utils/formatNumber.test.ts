@@ -1,6 +1,19 @@
 import { expect, it } from 'vitest';
-import { formatNumber } from './formatNumber';
+import { formatNumber, formatBaseValue, formatAssetAmount } from './formatNumber';
 import Decimal from 'decimal.js';
+
+it('uses two display decimals by default and supports per-asset overrides', () => {
+  expect(formatAssetAmount('1234.56789')).toBe('1,234.56');
+  expect(formatAssetAmount('1.23456789', { displayDecimals: 6 })).toBe('1.234567');
+  expect(formatAssetAmount('12.9', { displayDecimals: 0 })).toBe('12');
+  expect(formatAssetAmount('12')).toBe('12.00');
+});
+
+it('formats chain base values without losing bigint precision', () => {
+  expect(formatBaseValue(9007199254740993129n, 1000n, { currencySymbol: '$' })).toBe('$9,007,199,254,740,993.12');
+  expect(formatBaseValue(1n, 10n ** 18n, { decimals: 18, trimZeros: true })).toBe('0.000000000000000001');
+  expect(formatBaseValue(1n, 0n)).toBe('—');
+});
 
 it('prefixes currency symbols after the negative sign and leaves fallbacks unchanged', () => {
   expect(formatNumber('1234.567', { currencySymbol: '$' })).toBe('$1,234.56');

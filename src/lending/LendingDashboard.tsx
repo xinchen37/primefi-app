@@ -1,3 +1,4 @@
+import { formatNumber, formatBaseValue, formatAssetAmount } from '../utils/formatNumber';
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { Token, Note, Health, Toggle, DetailLink } from '../components';
 import { ArrowDownLeft, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import InfoTip from '../InfoTip';
 import chainIcon from '../images/icon/robinhood.png';
-import { money, type Action } from '../model';
+import { type Action } from '../model';
 import { robinhood } from '../network';
 import { getLendingConfig, loadLendingConfig } from './config';
 import { lendingClient, lendingError } from './client';
@@ -37,7 +38,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   const initialLoading = !data && !deployment.error && !result.error && (deployment.isPending || (!!market && result.isPending));
   const personalLoading = initialLoading && !!account;
   const retry = () => { void deployment.refetch(); if (market) void result.refetch(); };
-  const value = (n: bigint) => data && account ? money(Number(n) / Number(data.unit)) : '—';
+  const value = (n: bigint) => data && account ? formatBaseValue(n, data.unit, { currencySymbol: '$' }) : '—';
   const baseValue = (row: AssetSnapshot, n: bigint) => n * row.price / 10n ** BigInt(row.asset.decimals);
   const supplied = data?.assets.reduce((n, row) => n + baseValue(row, row.supplied), 0n) ?? 0n;
   const debt = data?.debt ?? 0n;
@@ -46,7 +47,7 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
   const netApy = supplied > debt ? (weightedSupply - weightedBorrow) / Number(supplied - debt) : undefined;
   const hf = data?.debt ? Number(formatUnits(data.health, 18)) : undefined;
   const powerUsed = data && data.debt + data.available > 0n ? Number(data.debt) / Number(data.debt + data.available) * 100 : 0;
-  const amount = (row: AssetSnapshot, n: bigint) => Number(formatUnits(n, row.asset.decimals)).toLocaleString('en-US', { maximumFractionDigits: 6 });
+  const amount = (row: AssetSnapshot, n: bigint) => formatAssetAmount(formatUnits(n, row.asset.decimals), row.asset);
   function act(row: AssetSnapshot, action: Action) { if (!account) onConnect(); else setTransaction({ row, action }); }
   function identity(row: AssetSnapshot) { return <div className="asset-name"><Token symbol={row.asset.iconSymbol ?? row.asset.symbol} /><span><strong>{row.asset.symbol}</strong><small>{row.asset.name ?? row.asset.symbol}</small></span></div>; }
   function table(title: string, action: Action) {
@@ -54,22 +55,22 @@ export default function LendingDashboard({ onConnect, beforeSubmit, onHelp }: { 
     const personal = action === 'withdraw' || action === 'repay';
     const rows = data?.assets.filter(r => !personal || (action === 'withdraw' ? r.supplied : r.debt) > 0n) ?? [];
     return <section className="panel"><div className="panel-title"><span className="inline">{personal && (action === 'withdraw' ? <ArrowDownLeft size={19} /> : <ArrowUpRight size={19} />)}<h3>{title}</h3></span><span className="subtle">{personal ? market?.name : action === 'supply' ? 'Available balance' : 'Variable rates'}</span></div>
-      {personal && <div className="panel-stats"><div><small>{action === 'withdraw' ? 'Supply balance' : 'Borrow balance'}</small><strong>{value(action === 'withdraw' ? supplied : debt)}</strong></div><div><small>{action === 'withdraw' ? 'Weighted supply APY' : 'Health factor'}</small><strong>{action === 'withdraw' ? (account && supplied > 0n ? `${(weightedSupply / Number(supplied)).toFixed(2)}%` : '—') : hf === undefined ? '—' : <Health value={hf} />}</strong></div></div>}
+      {personal && <div className="panel-stats"><div><small>{action === 'withdraw' ? 'Supply balance' : 'Borrow balance'}</small><strong>{value(action === 'withdraw' ? supplied : debt)}</strong></div><div><small>{action === 'withdraw' ? 'Weighted supply APY' : 'Health factor'}</small><strong>{action === 'withdraw' ? (account && supplied > 0n ? `${formatNumber((weightedSupply / Number(supplied)), { decimals: 2 })}%` : '—') : hf === undefined ? '—' : <Health value={hf} />}</strong></div></div>}
       {action === 'repay' && hf !== undefined && <div className="health-strip"><div><span className={hf >= 1.5 ? 'healthy' : 'danger'}>● {hf >= 1.5 ? 'Healthy position' : 'Position at risk'}</span><span>Liquidation below 1.00</span></div><div className="health-bar"><i style={{ left: `${Math.max(0, Math.min(96, hf / 6 * 100))}%` }} /></div></div>}
       {rows.length ? <div className="table-wrap"><table><thead><tr><th>Asset</th><th>{action === 'withdraw' ? 'Balance / APY' : action === 'repay' ? 'Debt balance' : action === 'supply' ? 'Balance' : 'Available'}</th><th>{action === 'withdraw' ? 'Collateral' : action === 'supply' ? 'Supply APY' : 'Borrow APY'}</th><th /></tr></thead><tbody>{rows.map(row => {
         const available = availableAmount(action, row, data!);
         const balance = action === 'withdraw' ? row.supplied : action === 'repay' ? row.debt : available;
         const disabled = result.isError || !row.active || row.paused || ((action === 'supply' || action === 'borrow') && row.frozen) || (action === 'borrow' && !row.borrowing) || (!!account && available <= 0n);
-        return <tr key={row.asset.address}><td>{identity(row)}</td><td><strong title={formatUnits(balance, row.asset.decimals)}>{account ? amount(row, balance) : '—'}</strong><small>{action === 'withdraw' ? `${row.supplyApy.toFixed(2)}%` : value(baseValue(row, balance))}</small></td><td>{action === 'withdraw' ? <span title="On-chain collateral status (read only)"><Toggle checked={!!row.collateral} disabled onChange={() => {}} label={`${row.asset.symbol} collateral status (read only)`} /></span> : `${(action === 'supply' ? row.supplyApy : row.borrowApy).toFixed(2)}%`}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled={disabled} onClick={() => act(row, action)}>{action[0].toUpperCase() + action.slice(1)}</button>{!personal && row.asset.previewPath && <DetailLink to={row.asset.previewPath} label={`View ${row.asset.symbol} market preview`} />}</div></td></tr>;
+        return <tr key={row.asset.address}><td>{identity(row)}</td><td><strong title={formatUnits(balance, row.asset.decimals)}>{account ? amount(row, balance) : '—'}</strong><small>{action === 'withdraw' ? `${formatNumber(row.supplyApy, { decimals: 2 })}%` : value(baseValue(row, balance))}</small></td><td>{action === 'withdraw' ? <span title="On-chain collateral status (read only)"><Toggle checked={!!row.collateral} disabled onChange={() => {}} label={`${row.asset.symbol} collateral status (read only)`} /></span> : `${formatNumber((action === 'supply' ? row.supplyApy : row.borrowApy), { decimals: 2 })}%`}</td><td><div className="row-actions"><button className={action === 'supply' ? 'primary' : 'secondary'} disabled={disabled} onClick={() => act(row, action)}>{action[0].toUpperCase() + action.slice(1)}</button>{!personal && row.asset.previewPath && <DetailLink to={row.asset.previewPath} label={`View ${row.asset.symbol} market preview`} />}</div></td></tr>;
       })}</tbody></table></div> : <div className="empty">{account ? 'No positions in this pool yet.' : 'Connect your wallet to view your positions.'}</div>}
-      {action === 'repay' && account && <div className="panel-bottom"><span>Borrow power used</span><strong>{powerUsed.toFixed(2)}%</strong><div className="progress"><i style={{ width: `${Math.min(100, powerUsed)}%` }} /></div></div>}
+      {action === 'repay' && account && <div className="panel-bottom"><span>Borrow power used</span><strong>{formatNumber(powerUsed, { decimals: 2 })}%</strong><div className="progress"><i style={{ width: `${Math.min(100, powerUsed)}%` }} /></div></div>}
       {!personal && <div className="table-foot">{action === 'supply' ? 'Supply assets to earn interest in this pool. Collateral status is managed by the protocol.' : 'Borrow limits depend on this pool’s collateral, reserve caps and available liquidity.'}</div>}
     </section>;
   }
   return <>
     <section className="overview"><div className="market-eyebrow"><img className="chain-icon large" src={chainIcon} alt="" width={30} height={30} /><span>{robinhood.name.toUpperCase()}</span><span className="live-dot" /><span className="subtle">{categoryName}</span></div>
       <div className="overview-heading"><h1>Your assets. More possibilities.</h1><button className="text-button" onClick={onHelp}>How lending works <ArrowUpRight size={16} /></button></div>
-      <div className="overview-stats"><div><span>{isolated ? 'Isolated market' : 'Core market'} net worth</span><strong>{personalLoading ? <Skeleton large /> : value(supplied - debt)}</strong></div><div><span>Net APY <InfoTip label="Net APY" /></span><strong>{personalLoading ? <Skeleton /> : account && netApy !== undefined ? <>{netApy.toFixed(2)}<em>%</em></> : '—'}<span className="stat-tag">Variable yield</span></strong></div><div><span>Available borrow power</span><strong>{personalLoading ? <Skeleton large /> : data ? value(data.available) : '—'}</strong></div></div>
+      <div className="overview-stats"><div><span>{isolated ? 'Isolated market' : 'Core market'} net worth</span><strong>{personalLoading ? <Skeleton large /> : value(supplied - debt)}</strong></div><div><span>Net APY <InfoTip label="Net APY" /></span><strong>{personalLoading ? <Skeleton /> : account && netApy !== undefined ? <>{formatNumber(netApy, { decimals: 2 })}<em>%</em></> : '—'}<span className="stat-tag">Variable yield</span></strong></div><div><span>Available borrow power</span><strong>{personalLoading ? <Skeleton large /> : data ? value(data.available) : '—'}</strong></div></div>
       <div className="orbit-art" aria-hidden="true"><div /><div /><div /><span>✦</span></div>
     </section>
     <div className="content lending-dashboard">

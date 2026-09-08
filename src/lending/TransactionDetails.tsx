@@ -1,8 +1,10 @@
+import { formatNumber, formatBaseValue } from '../utils/formatNumber';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatEther, formatUnits, type Address } from 'viem';
 import { Health, Note } from '../components';
-import { money, type Action } from '../model';
+import InfoTip from '../InfoTip';
+import { type Action } from '../model';
 import { robinhood } from '../network';
 import { lendingClient } from './client';
 import { poolCall } from './service';
@@ -33,12 +35,17 @@ export default function TransactionDetails({ action, amount, row, pool, market, 
   return <>
     <div className="transaction-details">
       {action === 'supply' && <div className="detail-row"><span>Use as collateral</span><strong>{row.collateral ? 'Enabled' : row.ltv === 0 ? 'Not eligible' : 'Set by protocol'}</strong></div>}
-      <div className="detail-row"><span>{supply ? 'Supply APY' : 'Variable borrow APY'}</span><strong>{(supply ? row.supplyApy : row.borrowApy).toFixed(2)}%</strong></div>
+      <div className="detail-row"><span>{supply ? 'Supply APY' : 'Variable borrow APY'}</span><strong>{formatNumber((supply ? row.supplyApy : row.borrowApy), { decimals: 2 })}%</strong></div>
       <div className="detail-row"><span>Health factor (estimated)</span><strong>{health(pool.debt === 0n ? null : pool.health)} <span aria-hidden="true"> → </span> {health(preview?.health)}</strong></div>
-      <div className="detail-row"><span>Total debt after transaction (estimated)</span><strong>{preview ? money(Number(preview.debt) / Number(pool.unit)) : '—'}</strong></div>
-      <div className="detail-row"><span>Network fee (estimated)</span><strong>{!amount ? '—' : debounced !== amount || fee.isLoading ? <Skeleton /> : fee.data !== undefined ? `≈ ${Number(formatEther(fee.data)).toLocaleString('en-US', { maximumSignificantDigits: 4 })} ETH` : 'Unavailable'}</strong></div>
+      <div className="detail-row"><span>Total debt after transaction (estimated)</span><strong>{preview ? formatBaseValue(preview.debt, pool.unit, { currencySymbol: '$' }) : '—'}</strong></div>
+      <div className="detail-row"><span className="inline">Network fee (estimated) <InfoTip label="Network fee" /></span><strong>{!amount ? '—' : debounced !== amount || fee.isLoading ? <Skeleton /> : fee.data !== undefined ? `≈ ${formatNumber(formatEther(fee.data), { decimals: 18, trimZeros: true })} ETH` : 'Unavailable'}</strong></div>
     </div>
-    <p className="subtle">Fee estimate is for this operation only, excluding token approvals and any additional L1 fee. Your wallet shows the final fee.{fee.isError ? ' Estimation may require token approval or a valid position.' : ''}</p>
-    <Note>{action === 'repay' ? 'Repay debt to improve your health factor. Accrued interest may leave a small remaining balance.' : 'A health factor below 1 may trigger liquidation. Interest rates vary with market utilization.'} Projections use current prices and balances. {preview?.health === undefined ? 'The collateral outcome cannot be reliably estimated for this configuration. ' : ''}Final values are determined by the protocol.</Note>
+    {fee.isError && !!amount && debounced === amount && <p className="subtle" role="status">Fee estimation unavailable. Token approval or a valid position may be required.</p>}
+    {!!amount && preview?.health === undefined && <p className="subtle" role="status">The collateral outcome cannot be reliably estimated for this configuration.</p>}
+    <Note>{action === 'supply' || action === 'repay'
+      ? 'A separate token approval may be required. Only the entered amount will be approved for this pool.'
+      : 'A health factor below 1 may trigger liquidation. Interest rates vary with market utilization.'}
+      {row.asset.symbol === 'WETH' ? ' This operation uses ERC-20 WETH, not native ETH.' : ''}
+    </Note>
   </>;
 }

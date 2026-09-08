@@ -3,6 +3,15 @@ import { loadLendingConfig, validateConfig } from './config';
 
 afterEach(() => vi.unstubAllGlobals());
 
+it('defaults display precision to two without changing chain decimals', async () => {
+  const config = await loadLendingConfig(46630);
+  expect(config.markets[0].assets[1]).toMatchObject({ decimals: 18, displayDecimals: 2 });
+  config.markets[0].assets[1].displayDecimals = 6;
+  expect(validateConfig(config, 46630).markets[0].assets[1].displayDecimals).toBe(6);
+  config.markets[0].assets[1].displayDecimals = -1;
+  expect(() => validateConfig(config, 46630)).toThrow('Invalid asset display decimals');
+});
+
 it('loads local pools without fetching and preserves token display metadata', async () => {
   const fetch = vi.fn(() => { throw new Error('Offline'); });
   vi.stubGlobal('fetch', fetch);

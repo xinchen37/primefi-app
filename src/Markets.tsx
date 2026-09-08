@@ -1,3 +1,4 @@
+import { formatNumber } from './utils/formatNumber';
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MarketCategoryTabs } from './MarketNavigation';
@@ -75,7 +76,7 @@ export default function Markets({
                         {compact(r.total)} {a.symbol}
                       </small>
                     </td>
-                    <td className="apy">{a.supplyApy.toFixed(2)}%</td>
+                    <td className="apy">{formatNumber(a.supplyApy, { decimals: 2 })}%</td>
                     <td>
                       <strong>${compact(r.borrowed * a.price)}</strong>
                       <small>
@@ -84,12 +85,12 @@ export default function Markets({
                     </td>
                     <td>
                       {a.borrowCap ? (
-                        `${a.borrowApy.toFixed(2)}%`
+                        `${formatNumber(a.borrowApy, { decimals: 2 })}%`
                       ) : (
                         <span className="tag">Not borrowable</span>
                       )}
                     </td>
-                    <td>{((r.borrowed / r.total) * 100).toFixed(1)}%</td>
+                    <td>{formatNumber(((r.borrowed / r.total) * 100), { decimals: 1 })}%</td>
                     <td>
                       {Number.isFinite(a.borrowCap) ? money(a.borrowCap * a.price) : 'No limit'}
                       {Number.isFinite(a.borrowCap) && <small>{compact(a.borrowCap)} {a.symbol}</small>}
